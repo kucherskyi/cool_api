@@ -1,0 +1,6 @@
+DEBUG = True
+TESTING = True
+CSRF_ENABLED = True
+SECRET_KEY = 'sk'
+SQLALCHEMY_DATABASE_URI = 'postgresql://admin:pass@localhost:5432/test'
+SQLALCHEMY_TRACK_MODIFICATIONS = False

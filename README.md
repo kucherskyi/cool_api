@@ -1,2 +1,2 @@
 # cool_api
-Flask app
+Train project
