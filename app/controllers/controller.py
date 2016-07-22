@@ -2,12 +2,14 @@
 
 from flask import jsonify, request, current_app, Response
 from flask_restful import Resource as BaseResource
-from flask_restful import reqparse, abort, fields, marshal_with
+from flask_restful import reqparse, abort
 from functools import wraps
 import hashlib
 import json
 
 from app.models.user import User, db
+
+
 
 
 def auth_token_required(fn):
@@ -27,7 +29,3 @@ def auth_token_required(fn):
 class Base(BaseResource):
     method_decorators = [auth_token_required]
 
-
-class Index(Base):
-    def get(self):
-        return 'Hello'

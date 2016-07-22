@@ -1,8 +1,8 @@
 #!env/bin/python
 
-from flask import Flask, jsonify, g, current_app
+from flask import Flask, jsonify, g
 from flask_httpauth import HTTPBasicAuth
-from flask_restful import Resource, Api
+from flask_restful import Api
 
 from models.user import User
 
@@ -15,8 +15,11 @@ def create_app():
     app.add_url_rule('/api/login', 'login', _get_token)
     from models.user import db
     db.init_app(app)
-    from controllers.controller import Index
+    from controllers.index import Index
+    from controllers.user import UsersList, UserSingle
     api.add_resource(Index, '/api/index')
+    api.add_resource(UsersList, '/api/users')
+    api.add_resource(UserSingle, '/api/users/<user_id>')
     return app
 
 auth = HTTPBasicAuth()
