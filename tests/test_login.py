@@ -1,6 +1,5 @@
 #! env/bin/python
 
-from base64 import b64encode
 import json
 import hashlib
 import unittest

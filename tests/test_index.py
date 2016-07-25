@@ -1,10 +1,8 @@
 #! env/bin/python
 
 import json
-import hashlib
 import unittest
 
-from app.models.user import User, db
 from tests.base_test import BaseTestCase
 
 

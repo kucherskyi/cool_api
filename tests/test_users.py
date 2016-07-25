@@ -1,18 +1,9 @@
 #! env/bin/python
 
-from flask_restful import reqparse
 import json
-import hashlib
 import unittest
 
-from app.models.user import User, db
-from app.controllers.parsers import post_user
 from tests.base_test import BaseTestCase
-
-post_user = reqparse.RequestParser()
-post_user.add_argument('name', type=str, required=True)
-post_user.add_argument('password', type=str, required=True)
-post_user.add_argument('email', type=str, required=True)
 
 
 class TestGetAllUsers(BaseTestCase):
@@ -59,8 +50,9 @@ class TestPostUser(BaseTestCase):
 
     def test_post_user_with_taken_email(self):
         token = self.login().json['token']
-        response = self.client.post(
-            '/api/users', headers={'token': token}, data={"email": "email1"})
+        response = self.client.post('/api/users',
+                                    headers={'token': token},
+                                    data={"email": "email1"})
         self.assertEqual(response.status_code, 400)
 
     def test_valid_post_user(self):
@@ -82,6 +74,158 @@ class TestPostUser(BaseTestCase):
         created_user = self.test_valid_post_user()
         self.assertEqual(self.login(created_user['name'],
                                     created_user['password']).status_code, 200)
+
+
+class TestGetSingleUser(BaseTestCase):
+
+    def test_get_single_user_with_no_token(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)[0]['id']
+        single_user = self.client.get('/api/users/' + str(user))
+        self.assertEqual(single_user.status_code, 401)
+
+    def test_get_single_user_with_invalid_token(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)[0]['id']
+        token = self.login().json['token'] + '1'
+        single_user = self.client.get('/api/users/' + str(user),
+                                      headers={'token': token})
+        self.assertEqual(single_user.status_code, 401)
+
+    def test_get_single_user_with_no_id(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        single_user = self.client.get('/api/users/', headers={'token': token})
+        self.assertEqual(single_user.status_code, 404)
+
+    def test_get_single_user_with_invalid_id(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)
+        for item in user:
+            max_id = 1
+            if item['id'] > max_id:
+                max_id = item['id']
+        single_user = self.client.get('/api/users/' + str(max_id + 1),
+                                      headers={'token': token})
+        self.assertEqual(single_user.status_code, 404)
+
+    def test_get_single_user(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)[0]['id']
+        single_user = self.client.get('/api/users/' + str(user),
+                                      headers={'token': token})
+        self.assertEqual(single_user.status_code, 200)
+
+
+class TestDeleteUser(BaseTestCase):
+
+    def test_delete_single_user_with_no_token(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)[0]['id']
+        single_user = self.client.delete('/api/users/' + str(user))
+        self.assertEqual(single_user.status_code, 401)
+
+    def test_delete_single_user_with_invalid_token(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)[0]['id']
+        token = self.login().json['token'] + '1'
+        single_user = self.client.delete('/api/users/' + str(user),
+                                         headers={'token': token})
+        self.assertEqual(single_user.status_code, 401)
+
+    def test_delete_single_user_with_no_id(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        single_user = self.client.get('/api/users/', headers={'token': token})
+        self.assertEqual(single_user.status_code, 404)
+
+    def test_delete_single_user_with_invalid_id(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)
+        for item in user:
+            max_id = 1
+            if item['id'] > max_id:
+                max_id = item['id']
+        single_user = self.client.delete('/api/users/' + str(max_id + 1),
+                                         headers={'token': token})
+        self.assertEqual(single_user.status_code, 400)
+
+    def test_delete_single_user(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)[0]['id']
+        single_user = self.client.delete('/api/users/' + str(user),
+                                         headers={'token': token})
+        self.assertEqual(single_user.status_code, 204)
+        return user
+
+    def test_user_is_deleted(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = self.test_delete_single_user()
+        single_user = self.client.get('/api/users/' + str(user),
+                                      headers={'token': token})
+        self.assertEqual(single_user.status_code, 401)
+
+
+class TestPutUser(BaseTestCase):
+
+    def test_put_single_user_with_no_token(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)[0]['id']
+        single_user_info = self.client.get('/api/users/' + str(user),
+                                           headers={'token': token})
+        info = json.loads(single_user_info.data)['info']
+        update_user = self.client.put('/api/users/' + str(user),
+                                      data={"info": str(info) + 'udpated'})
+        self.assertEqual(update_user.status_code, 401)
+
+    def test_put_single_user_with_invalid_token(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)[0]['id']
+        single_user_info = self.client.get('/api/users/' + str(user),
+                                           headers={'token': token})
+        info = json.loads(single_user_info.data)['info']
+        token = self.login().json['token'] + '1'
+        update_user = self.client.put('/api/users/' + str(user),
+                                      headers={'token': token},
+                                      data={"info": str(info) + 'udpated'})
+        self.assertEqual(update_user.status_code, 401)
+
+    def test_put_single_user_with_no_id(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)[0]['id']
+        single_user_info = self.client.get('/api/users/' + str(user),
+                                           headers={'token': token})
+        info = json.loads(single_user_info.data)['info']
+        single_user = self.client.put('/api/users/',
+                                      headers={'token': token},
+                                      data={"info": str(info) + 'updated'})
+        self.assertEqual(single_user.status_code, 404)
+
+    def test_put_single_user(self):
+        token = self.login().json['token']
+        all_us = self.client.get('/api/users', headers={'token': token})
+        user = json.loads(all_us.data)[0]['id']
+        single_user_info = self.client.get('/api/users/' + str(user),
+                                           headers={'token': token})
+        info = json.loads(single_user_info.data)['info']
+        update_user = self.client.put('/api/users/' + str(user),
+                                      headers={'token': token},
+                                      data={"info": str(info) + 'udpated'})
+        self.assertEqual(update_user.status_code, 201)
+        updated_info = json.loads(update_user.data)['info']
+        self.assertNotEqual(info, updated_info)
 
 
 if __name__ == '__main__':
