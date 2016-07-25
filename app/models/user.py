@@ -4,9 +4,9 @@ from flask import current_app
 import hashlib
 from itsdangerous import BadSignature, SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from sqlalchemy import Column, Integer, DateTime, String, Boolean, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean
 
-from base import Base, db
+from app.models.base import Base, db
 
 
 class User(Base):

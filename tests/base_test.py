@@ -21,7 +21,7 @@ class BaseTestCase(TestCase):
             'postgresql://admin:pass@localhost:5432/test'
         current_app.config['PRESERVE_CONTEXT_ON_EXCEPTION'] = False
         db.create_all()
-        user1 = User(name='user1')
+        user1 = User(name='user1', email = 'email1')
         user1.password = hashlib.md5('pass1').hexdigest()
         db.session.add(user1)
         db.session.commit()

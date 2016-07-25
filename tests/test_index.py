@@ -5,7 +5,7 @@ import hashlib
 import unittest
 
 from app.models.user import User, db
-from base_test import BaseTestCase
+from tests.base_test import BaseTestCase
 
 
 class TestIndex(BaseTestCase):
