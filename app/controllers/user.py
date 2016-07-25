@@ -1,83 +1,58 @@
 #!env/bin/python
 
-from flask import jsonify, abort
-from flask_restful import reqparse, fields, marshal_with
-from psycopg2 import IntegrityError
-
-from app.models.user import User, db
-from controller import Base
+from flask import abort
+from flask_restful import marshal_with
 import hashlib
+from sqlalchemy.exc import DataError, IntegrityError
 
-responce_user = {
-    'id': fields.Integer,
-    'name': fields.Raw,
-    'email': fields.Raw,
-    'info': fields.Raw,
-    'is_admin': fields.Boolean,
-    'created_at':fields.String,
-    'updated_at':fields.String
-}
-
-responce_user_list = {
-    'id': fields.Integer,
-    'name': fields.Raw
-}
-
-
-parser = reqparse.RequestParser()
-parser.add_argument('name')
-parser.add_argument('password')
-parser.add_argument('info')
-parser.add_argument('email')
-parser.add_argument('is_admin')
+from app.controllers.controller import Base
+from app.controllers.marshalling_fields import *
+from app.controllers.parsers import *
+from app.models.user import User, db
 
 
 class UsersList(Base):
-    @marshal_with(responce_user_list)
+    @marshal_with(RESPONSE_USER_LIST)
     def get(self):
-        all_users = []
-        for row in db.session.query(User).all():
-            all_users.append(row)
-        return all_users
+        return User.query.all()
 
+    @marshal_with(RETURN_USER)
     def post(self):
-        args = parser.parse_args()
-        name = args['name']
-        password = hashlib.md5(args['password']).hexdigest()
-        email = args['email']
-        info = args['info']
-        is_admin = args['is_admin']
+        args = post_user.parse_args()
+        user = User(**args)
+        user.password = hashlib.md5(args['password']).hexdigest()
         try:
-            user = User(name=name,
-                        info=info,
-                        password=password,
-                        email=email,
-                        is_admin = is_admin)
             db.session.add(user)
             db.session.commit()
-        except IntegrityError as e:
-            print e
-        return args['name'], 201
+        except (DataError, IntegrityError) as e:
+            db.session.rollback()
+            abort(400, str(e))
+        return user, 201
 
 
 class UserSingle(Base):
-    @marshal_with(responce_user)
+    @marshal_with(RESPONSE_USER)
     def get(self, user_id):
-        user = User.query.get(user_id)
-        if not user:
-            abort(400, error_message='No user with id={}'.format(user_id))
+        user = User.query.get_or_404(user_id)
         return user
 
     def delete(self, user_id):
         user = User.query.get(user_id)
-        db.session.delete(user)
-        db.session.commit()
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception, e:
+            abort(400, str(e))
         return 'deleted', 204
 
+    @marshal_with(RETURN_PUT)
     def put(self, user_id):
-        args = parser.parse_args()
+        args = put_user.parse_args()
         user = User.query.get(user_id)
         user.info = args['info']
-        db.session.add(user)
-        db.session.commit()
-        return jsonify({'name': user.info})
+        try:
+            db.session.add(user)
+            db.session.commit()
+            return user, 201
+        except Exception, e:
+            abort(400, str(e))
