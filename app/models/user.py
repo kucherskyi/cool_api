@@ -1,21 +1,19 @@
-#!env/bin/python
-
 from flask import current_app
 import hashlib
 from itsdangerous import BadSignature, SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, Text
 
 from app.models.base import Base, db
 
 
 class User(Base):
     __tablename__ = 'users'
-    name = Column(String(32), unique=True)
-    password = Column(String)
-    info = Column(String(100))
-    email = Column(String(200))
-    is_admin = Column(Boolean, default=False)
+    name = Column(String(200), unique=True, nullable=False)
+    password = Column(String(32), nullable=False)
+    info = Column(Text)
+    email = Column(String(254), nullable = False, unique=True)
+    is_admin = Column(Boolean, default=False, nullable=False)
 
     def verify_password(self, password):
         if self.password == hashlib.md5(password).hexdigest():
@@ -27,6 +25,7 @@ class User(Base):
 
     @staticmethod
     def verify_auth_token(token):
+
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)

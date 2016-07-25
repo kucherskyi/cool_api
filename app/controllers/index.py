@@ -1,5 +1,3 @@
-#!env/bin/python
-
 from app.controllers.controller import Base
 
 class Index(Base):

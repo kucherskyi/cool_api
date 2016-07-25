@@ -1,5 +1,3 @@
-#! env/bin/python
-
 import json
 import hashlib
 import unittest
