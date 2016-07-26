@@ -1,9 +1,8 @@
-from flask import current_app, abort
+from flask import current_app
 import hashlib
 from itsdangerous import BadSignature, SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from sqlalchemy import Column, Integer, String, Boolean, Text
-from sqlalchemy.orm import validates
 
 from app.models.base import Base, db
 
