@@ -1,5 +1,3 @@
-#! env/bin/python
-
 import unittest
 
 from tests import *

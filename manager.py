@@ -1,10 +1,8 @@
-#!env/bin/python
-
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
 
 from app.app import create_app
-from app.models.user import db
+from app.models.base import db
 
 app = create_app()
 migrate = Migrate(app, db)

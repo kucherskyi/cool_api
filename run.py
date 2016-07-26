@@ -1,5 +1,3 @@
-#!env/bin/python
-
 from app.app import create_app
 
 app = create_app()

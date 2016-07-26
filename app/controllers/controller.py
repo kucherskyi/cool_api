@@ -1,5 +1,3 @@
-#!env/bin/python
-
 from flask import request, current_app
 from flask_restful import Resource as BaseResource
 from functools import wraps

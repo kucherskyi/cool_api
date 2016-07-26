@@ -1,232 +1,158 @@
-#! env/bin/python
-
 import json
 import unittest
+import hashlib
 
 from tests.base_test import BaseTestCase
+from app.models.user import db, User
 
 
-class TestGetAllUsers(BaseTestCase):
+class TestUserList(BaseTestCase):
+    ENDPOINT = 'api/users'
+    REQUIRED_DATA = {
+        'name': 'name4',
+        'password': '1',
+        'email': 'email4'
+    }
 
-    def test_get_users_with_no_token(self):
-        response = self.client.get('/api/users')
-        self.assertEqual(response.status_code, 401)
+    def test_get_no_auth(self):
+        self.assert401(self.client.get(self.ENDPOINT))
 
-    def test_get_users_with_empty_token(self):
-        response = self.client.get('/api/users', headers={'token': ''})
-        self.assertEqual(response.status_code, 401)
+    def test_get_users_count(self):
+        res = self.client.get(self.ENDPOINT, headers=self.auth_header)
+        self.assert200(res)
+        self.assertEqual(len(res.json), 1)
+        user2 = User(name='user2', email='email2', password='1')
+        user3 = User(name='user3', email='email3', password='1')
+        db.session.add(user2)
+        db.session.add(user3)
+        db.session.commit()
+        res = self.client.get(self.ENDPOINT, headers=self.auth_header)
+        self.assertEqual(len(res.json), 3)
 
-    def test_get_users_with_invalid_token(self):
-        token = self.login().json['token'] + '1'
-        response = self.client.get('/api/users', headers={'token': token})
-        self.assertEqual(response.status_code, 401)
+    def test_get_user_fields(self):
+        res = self.client.get(self.ENDPOINT, headers=self.auth_header)
+        self.assertDictEqual(res.json[0], {'name': 'user1', 'id': 1})
 
-    def test_get_users_with_valid_token(self):
-        token = self.login().json['token']
-        response = self.client.get('/api/users', headers={'token': token})
-        self.assertEqual(response.status_code, 200)
+    def test_post_no_required(self):
+        for key in self.REQUIRED_DATA.keys():
+            params = self.REQUIRED_DATA.copy()
+            del params[key]
+            self.assert400(self.client.post(self.ENDPOINT,
+                                            headers=self.auth_header,
+                                            data=params))
 
-    def test_response_contains_users(self):
-        token = self.login().json['token']
-        response = self.client.get('/api/users', headers={'token': token})
-        self.assertEqual(json.loads(response.data)[0]["name"], "user1")
+    def test_post_all_field(self):
+        params = self.REQUIRED_DATA.copy()
+        params['info'] = 'test info'
+        params['is_admin'] = False
 
+        res = self.client.post(self.ENDPOINT,
+                               headers=self.auth_header,
+                               data=params)
+        self.assertEqual(res.status_code, 201)
+        self.assertDictEqual(res.json, {'id': 2})
 
-class TestPostUser(BaseTestCase):
+        user = User.query.get(2)
+        self.assertEqual(user.name, 'name4')
+        self.assertEqual(user.email, 'email4')
+        self.assertEqual(user.info, 'test info')
+        self.assertEqual(user.password, hashlib.md5('1').hexdigest())
+        self.assertEqual(user.is_admin, False)
+        self.assertIsNotNone(user.created_at)
+        self.assertIsNotNone(user.updated_at)
 
-    def test_post_user_with_no_token(self):
-        response = self.client.post('/api/users')
-        self.assertEqual(response.status_code, 401)
+    def test_post_default_fields(self):
+        params = self.REQUIRED_DATA.copy()
+        res = self.client.post(self.ENDPOINT,
+                               headers=self.auth_header,
+                               data=params)
+        self.assertEqual(res.status_code, 201)
+        self.assertDictEqual(res.json, {'id': 2})
+        user = User.query.get(2)
+        self.assertEqual(user.is_admin, False)
+        self.assertIsNotNone(user.created_at)
+        self.assertIsNotNone(user.updated_at)
 
-    def test_gpost_users_with_empty_token(self):
-        response = self.client.post('/api/users', headers={'token': ''})
-        self.assertEqual(response.status_code, 401)
+    def test_post_data_error(self):
+        params = self.REQUIRED_DATA.copy()
+        params['name'] = 'user1' * 100
+        res = self.client.post(self.ENDPOINT,
+                               headers=self.auth_header,
+                               data=params)
+        self.assert400(res)
+        self.assertIn('DataError', res.json['message'])
 
-    def test_post_users_with_invalid_token(self):
-        token = self.login().json['token'] + '1'
-        response = self.client.post(
-            '/api/users', headers={'token': token}, data={"name": "name"})
-        self.assertEqual(response.status_code, 401)
+    def test_post_integrity_error(self):
+        params = self.REQUIRED_DATA.copy()
+        params['name'] = 'user1'
+        res = self.client.post(self.ENDPOINT,
+                               headers=self.auth_header,
+                               data=params)
+        self.assert400(res)
+        self.assertIn('IntegrityError', res.json['message'])
 
-    def test_post_user_with_taken_email(self):
-        token = self.login().json['token']
-        response = self.client.post('/api/users',
-                                    headers={'token': token},
-                                    data={"email": "email1"})
-        self.assertEqual(response.status_code, 400)
-
-    def test_valid_post_user(self):
-        new_user = {
-            "name": "name1",
-            "password": "pass1",
-            "email": "email321",
-            "is_admin": "0"
-        }
-        token = self.login().json['token']
-        response = self.client.post('/api/users',
-                                    headers={'token': token},
-                                    data=new_user)
-        self.assertEqual(response.status_code, 201)
-        new_user["password"] = "pass1"
-        return new_user
-
-    def test_created_user_able_to_login(self):
-        created_user = self.test_valid_post_user()
-        self.assertEqual(self.login(created_user['name'],
-                                    created_user['password']).status_code, 200)
-
-
-class TestGetSingleUser(BaseTestCase):
-
-    def test_get_single_user_with_no_token(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)[0]['id']
-        single_user = self.client.get('/api/users/' + str(user))
-        self.assertEqual(single_user.status_code, 401)
-
-    def test_get_single_user_with_invalid_token(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)[0]['id']
-        token = self.login().json['token'] + '1'
-        single_user = self.client.get('/api/users/' + str(user),
-                                      headers={'token': token})
-        self.assertEqual(single_user.status_code, 401)
-
-    def test_get_single_user_with_no_id(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        single_user = self.client.get('/api/users/', headers={'token': token})
-        self.assertEqual(single_user.status_code, 404)
-
-    def test_get_single_user_with_invalid_id(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)
-        for item in user:
-            max_id = 1
-            if item['id'] > max_id:
-                max_id = item['id']
-        single_user = self.client.get('/api/users/' + str(max_id + 1),
-                                      headers={'token': token})
-        self.assertEqual(single_user.status_code, 404)
-
-    def test_get_single_user(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)[0]['id']
-        single_user = self.client.get('/api/users/' + str(user),
-                                      headers={'token': token})
-        self.assertEqual(single_user.status_code, 200)
+        params = self.REQUIRED_DATA.copy()
+        params['email'] = 'email1'
+        res = self.client.post(self.ENDPOINT,
+                               headers=self.auth_header,
+                               data=params)
+        self.assert400(res)
+        self.assertIn('IntegrityError', res.json['message'])
 
 
-class TestDeleteUser(BaseTestCase):
+class TestUserSingle(BaseTestCase):
+    ENDPOINT = 'api/users'
 
-    def test_delete_single_user_with_no_token(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)[0]['id']
-        single_user = self.client.delete('/api/users/' + str(user))
-        self.assertEqual(single_user.status_code, 401)
+    def test_get_not_found(self):
+        res = self.client.get(self.ENDPOINT + '/100', headers=self.auth_header)
+        self.assert404(res)
+        user = User.query.get(100)
+        self.assertEqual(user, None)
 
-    def test_delete_single_user_with_invalid_token(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)[0]['id']
-        token = self.login().json['token'] + '1'
-        single_user = self.client.delete('/api/users/' + str(user),
-                                         headers={'token': token})
-        self.assertEqual(single_user.status_code, 401)
+    def test_get(self):
+        res = self.client.get(self.ENDPOINT + '/1', headers=self.auth_header)
+        self.assert200(res)
+        self.assertIn('user1', res.json['name'])
+        self.assertIn('email1', res.json['email'])
+        self.assertEqual(res.json['info'], None)
+        self.assertEqual(res.json['is_admin'], False)
+        self.assertIn('2016', res.json['created_at'])
+        self.assertIn('2016', res.json['updated_at'])
 
-    def test_delete_single_user_with_no_id(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        single_user = self.client.get('/api/users/', headers={'token': token})
-        self.assertEqual(single_user.status_code, 404)
+    def test_delete_user(self):
+        user2 = User(name='user2', email='email2', password='1')
+        db.session.add(user2)
+        db.session.commit()
+        self.assertEqual(User.query.count(), 2)
+        res = self.client.delete(self.ENDPOINT + '/2',
+                                 headers=self.auth_header)
+        self.assertEqual(res.status_code, 204)
+        res = self.client.get(self.ENDPOINT + '/2',
+                              headers=self.auth_header)
+        self.assert404(res)
+        self.assertEqual(User.query.count(), 1)
 
-    def test_delete_single_user_with_invalid_id(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)
-        for item in user:
-            max_id = 1
-            if item['id'] > max_id:
-                max_id = item['id']
-        single_user = self.client.delete('/api/users/' + str(max_id + 1),
-                                         headers={'token': token})
-        self.assertEqual(single_user.status_code, 400)
+    def test_put_user_with_no_info(self):
+        res = self.client.get(self.ENDPOINT + '/1', headers=self.auth_header)
+        self.assert200(res)
+        self.assertEqual(res.json['info'], None)
+        self.assertEqual(User.query.get(1).info, None)
+        res = self.client.put(self.ENDPOINT + '/1',
+                              headers=self.auth_header)
+        self.assert400(res)
+        self.assertEqual(User.query.get(1).info, None)
 
-    def test_delete_single_user(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)[0]['id']
-        single_user = self.client.delete('/api/users/' + str(user),
-                                         headers={'token': token})
-        self.assertEqual(single_user.status_code, 204)
-        return user
-
-    def test_user_is_deleted(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = self.test_delete_single_user()
-        single_user = self.client.get('/api/users/' + str(user),
-                                      headers={'token': token})
-        self.assertEqual(single_user.status_code, 401)
-
-
-class TestPutUser(BaseTestCase):
-
-    def test_put_single_user_with_no_token(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)[0]['id']
-        single_user_info = self.client.get('/api/users/' + str(user),
-                                           headers={'token': token})
-        info = json.loads(single_user_info.data)['info']
-        update_user = self.client.put('/api/users/' + str(user),
-                                      data={"info": str(info) + 'udpated'})
-        self.assertEqual(update_user.status_code, 401)
-
-    def test_put_single_user_with_invalid_token(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)[0]['id']
-        single_user_info = self.client.get('/api/users/' + str(user),
-                                           headers={'token': token})
-        info = json.loads(single_user_info.data)['info']
-        token = self.login().json['token'] + '1'
-        update_user = self.client.put('/api/users/' + str(user),
-                                      headers={'token': token},
-                                      data={"info": str(info) + 'udpated'})
-        self.assertEqual(update_user.status_code, 401)
-
-    def test_put_single_user_with_no_id(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)[0]['id']
-        single_user_info = self.client.get('/api/users/' + str(user),
-                                           headers={'token': token})
-        info = json.loads(single_user_info.data)['info']
-        single_user = self.client.put('/api/users/',
-                                      headers={'token': token},
-                                      data={"info": str(info) + 'updated'})
-        self.assertEqual(single_user.status_code, 404)
-
-    def test_put_single_user(self):
-        token = self.login().json['token']
-        all_us = self.client.get('/api/users', headers={'token': token})
-        user = json.loads(all_us.data)[0]['id']
-        single_user_info = self.client.get('/api/users/' + str(user),
-                                           headers={'token': token})
-        info = json.loads(single_user_info.data)['info']
-        update_user = self.client.put('/api/users/' + str(user),
-                                      headers={'token': token},
-                                      data={"info": str(info) + 'udpated'})
-        self.assertEqual(update_user.status_code, 201)
-        updated_info = json.loads(update_user.data)['info']
-        self.assertNotEqual(info, updated_info)
-
+    def test_put_user(self):
+        res = self.client.get(self.ENDPOINT + '/1', headers=self.auth_header)
+        self.assert200(res)
+        self.assertEqual(res.json['info'], None)
+        self.assertEqual(User.query.get(1).info, None)
+        res = self.client.put(self.ENDPOINT + '/1',
+                              headers=self.auth_header,
+                              data={'info': 'updated'})
+        self.assert200(res)
+        self.assertEqual(res.json['info'], 'updated')
+        self.assertEqual(User.query.get(1).info, 'updated')
 
 if __name__ == '__main__':
     unittest.main()
