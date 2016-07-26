@@ -11,7 +11,7 @@ class TestUserList(BaseTestCase):
     REQUIRED_DATA = {
         'name': 'name4',
         'password': '1',
-        'email': 'email4'
+        'email': 'email4@em.co'
     }
 
     def test_get_no_auth(self):
@@ -21,8 +21,8 @@ class TestUserList(BaseTestCase):
         res = self.client.get(self.ENDPOINT, headers=self.auth_header)
         self.assert200(res)
         self.assertEqual(len(res.json), 1)
-        user2 = User(name='user2', email='email2', password='1')
-        user3 = User(name='user3', email='email3', password='1')
+        user2 = User(name='user2', email='email2@em.co', password='1')
+        user3 = User(name='user3', email='email3@em.co', password='1')
         db.session.add(user2)
         db.session.add(user3)
         db.session.commit()
@@ -54,7 +54,7 @@ class TestUserList(BaseTestCase):
 
         user = User.query.get(2)
         self.assertEqual(user.name, 'name4')
-        self.assertEqual(user.email, 'email4')
+        self.assertEqual(user.email, 'email4@em.co')
         self.assertEqual(user.info, 'test info')
         self.assertEqual(user.password, hashlib.md5('1').hexdigest())
         self.assertEqual(user.is_admin, False)
@@ -81,6 +81,23 @@ class TestUserList(BaseTestCase):
                                data=params)
         self.assert400(res)
         self.assertIn('DataError', res.json['message'])
+        params = self.REQUIRED_DATA.copy()
+        params['email'] = 'email' * 52 + '@em.co'
+        res = self.client.post(self.ENDPOINT,
+                               headers=self.auth_header,
+                               data=params)
+        self.assert400(res)
+        self.assertIn('DataError', res.json['message'])
+
+    def test_post_invalid_email(self):
+        params = self.REQUIRED_DATA.copy()
+        params['email'] = 'notvalid'
+        res = self.client.post(self.ENDPOINT,
+                               headers=self.auth_header,
+                               data=params)
+        self.assert400(res)
+        self.assertDictEqual(res.json['message'],
+            {'email': 'notvalid is not a valid email'})
 
     def test_post_integrity_error(self):
         params = self.REQUIRED_DATA.copy()
@@ -92,7 +109,7 @@ class TestUserList(BaseTestCase):
         self.assertIn('IntegrityError', res.json['message'])
 
         params = self.REQUIRED_DATA.copy()
-        params['email'] = 'email1'
+        params['email'] = 'email1@em.co'
         res = self.client.post(self.ENDPOINT,
                                headers=self.auth_header,
                                data=params)
@@ -112,8 +129,8 @@ class TestUserSingle(BaseTestCase):
     def test_get(self):
         res = self.client.get(self.ENDPOINT + '/1', headers=self.auth_header)
         self.assert200(res)
-        self.assertIn('user1', res.json['name'])
-        self.assertIn('email1', res.json['email'])
+        self.assertEqual(res.json['name'],'user1')
+        self.assertEqual(res.json['email'],'email1@em.co')
         self.assertEqual(res.json['info'], None)
         self.assertEqual(res.json['is_admin'], False)
         self.assertIn('2016', res.json['created_at'])

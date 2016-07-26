@@ -12,7 +12,7 @@ class User(Base):
     name = Column(String(200), unique=True, nullable=False)
     password = Column(String(32), nullable=False)
     info = Column(Text)
-    email = Column(String(254), nullable = False, unique=True)
+    email = Column(String(254), nullable=False, unique=True)
     is_admin = Column(Boolean, default=False, nullable=False)
 
     def verify_password(self, password):
