@@ -2,16 +2,26 @@ from flask import abort
 from flask_restful import marshal_with, reqparse, inputs
 import hashlib
 from sqlalchemy.exc import DataError, IntegrityError
+import re
 
 from app.controllers.controller import Base
 from app.controllers.marshalling_fields import *
 from app.models.user import User, db
 
+
+def email(address):
+    regex = "^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
+    if re.match(regex, address):
+        return address
+    else:
+        raise ValueError('{} is not a valid email'.format(address))
+    
+
 post_user = reqparse.RequestParser()
 post_user.add_argument('name', type=str, required=True)
 post_user.add_argument('password', type=str, required=True)
 post_user.add_argument('info', type=str)
-post_user.add_argument('email', type=str, required=True)
+post_user.add_argument('email', type=email, required=True)
 post_user.add_argument('is_admin', type=inputs.boolean)
 
 

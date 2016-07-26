@@ -1,8 +1,9 @@
-from flask import current_app
+from flask import current_app, abort
 import hashlib
 from itsdangerous import BadSignature, SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from sqlalchemy import Column, Integer, String, Boolean, Text
+from sqlalchemy.orm import validates
 
 from app.models.base import Base, db
 
@@ -12,7 +13,7 @@ class User(Base):
     name = Column(String(200), unique=True, nullable=False)
     password = Column(String(32), nullable=False)
     info = Column(Text)
-    email = Column(String(254), nullable = False, unique=True)
+    email = Column(String(254), nullable=False, unique=True)
     is_admin = Column(Boolean, default=False, nullable=False)
 
     def verify_password(self, password):
