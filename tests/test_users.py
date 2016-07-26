@@ -101,16 +101,16 @@ class TestUserList(BaseTestCase):
 
 
 class TestUserSingle(BaseTestCase):
-    ENDPOINT = 'api/users/'
+    ENDPOINT = 'api/users'
 
     def test_get_not_found(self):
-        res = self.client.get(self.ENDPOINT + '100', headers=self.auth_header)
+        res = self.client.get(self.ENDPOINT + '/100', headers=self.auth_header)
         self.assert404(res)
         user = User.query.get(100)
         self.assertEqual(user, None)
 
     def test_get(self):
-        res = self.client.get(self.ENDPOINT + '1', headers=self.auth_header)
+        res = self.client.get(self.ENDPOINT + '/1', headers=self.auth_header)
         self.assert200(res)
         self.assertIn('user1', res.json['name'])
         self.assertIn('email1', res.json['email'])
@@ -123,21 +123,31 @@ class TestUserSingle(BaseTestCase):
         user2 = User(name='user2', email='email2', password='1')
         db.session.add(user2)
         db.session.commit()
-        self.assertEqual(len(User.query.all()), 2)
-        res = self.client.delete(self.ENDPOINT + '2',
+        self.assertEqual(User.query.count(), 2)
+        res = self.client.delete(self.ENDPOINT + '/2',
                                  headers=self.auth_header)
         self.assertEqual(res.status_code, 204)
-        res = self.client.get(self.ENDPOINT + '2',
+        res = self.client.get(self.ENDPOINT + '/2',
                               headers=self.auth_header)
         self.assert404(res)
-        self.assertEqual(len(User.query.all()), 1)
+        self.assertEqual(User.query.count(), 1)
 
-    def test_put_user(self):
-        res = self.client.get(self.ENDPOINT + '1', headers=self.auth_header)
+    def test_put_user_with_no_info(self):
+        res = self.client.get(self.ENDPOINT + '/1', headers=self.auth_header)
         self.assert200(res)
         self.assertEqual(res.json['info'], None)
         self.assertEqual(User.query.get(1).info, None)
-        res = self.client.put(self.ENDPOINT + '1',
+        res = self.client.put(self.ENDPOINT + '/1',
+                              headers=self.auth_header)
+        self.assert400(res)
+        self.assertEqual(User.query.get(1).info, None)
+
+    def test_put_user(self):
+        res = self.client.get(self.ENDPOINT + '/1', headers=self.auth_header)
+        self.assert200(res)
+        self.assertEqual(res.json['info'], None)
+        self.assertEqual(User.query.get(1).info, None)
+        res = self.client.put(self.ENDPOINT + '/1',
                               headers=self.auth_header,
                               data={'info': 'updated'})
         self.assert200(res)
