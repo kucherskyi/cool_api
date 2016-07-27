@@ -9,7 +9,7 @@ def create_app():
     app = Flask(__name__)
     api = Api(app)
     app.config.from_object('config.default')
-    app.config.from_envvar('APP_SETTINGS')
+    app.config.from_envvar('APP_SETTINGS', silent=True)
     app.add_url_rule('/api/login', 'login', _get_token)
     from models.user import db
     db.init_app(app)
