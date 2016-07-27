@@ -1,12 +1,12 @@
 """created migration for is_admin
 Revision ID: test_migr
-Revises: fba104753a11
+Revises: b789e6402eec
 Create Date: 2016-07-27 00:00:00.309885
 """
 
 # revision identifiers, used by Alembic.
 revision = 'test_migr'
-down_revision = 'fba104753a11'
+down_revision = 'b789e6402eec'
 
 from alembic import op
 import sqlalchemy as sa
