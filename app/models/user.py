@@ -8,15 +8,15 @@ from sqlalchemy.orm import relationship, backref
 from app.models.base import Base, db
 
 
-class Association(Base):
+class UserAndTaskRelation(Base):
 
-    __tablename__ = 'association'
+    __tablename__ = 'user_task_relation'
 
-    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
-    task_id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    task_id = Column(Integer, ForeignKey('tasks.id'), nullable=False)
 
-    user_name = relationship('User', backref=backref("association"))
-    task_name = relationship('Task', backref=backref("association"))
+    user_relation = relationship('User', backref=backref('user_task_relation'))
+    task_relation = relationship('Task', backref=backref('user_task_relation'))
 
 
 class User(Base):
@@ -28,11 +28,12 @@ class User(Base):
     email = Column(String(254), nullable=False, unique=True)
     is_admin = Column(Boolean, default=False, nullable=False)
 
-    tasks = relationship("Task", secondary="association")
+    tasks = relationship('Task', secondary='user_task_relation')
 
     def assign_task(self, task_id):
-        self.association.append(Association(user_id = self.id,
-            task_id = task_id))
+        self.user_task_relation.append(UserAndTaskRelation(user_id=self.id,
+                                                           task_id=task_id))
+        db.session.commit()
 
     def verify_password(self, password):
         if self.password == hashlib.md5(password).hexdigest():
@@ -63,14 +64,14 @@ class Task(Base):
 
     __tablename__ = 'tasks'
 
-    title = Column(String(200), unique=True, nullable=False)
+    title = Column(String(200), nullable=False)
     status = Column(String(15), nullable=False)
 
-    users = relationship("User", secondary="association")
+    users = relationship('User', secondary='user_task_relation')
 
     def assign_user(self, userid):
-        self.association.append(Association(user_id = userid,
-            task_id = self.id))
+        self.user_task_relation.append(UserAndTaskRelation(user_id=userid,
+                                                           task_id=self.id))
 
     def __repr__(self):
-        return '{}'.format(self.title)
+        return '{}'.format(self.id)
