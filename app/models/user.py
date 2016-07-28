@@ -3,7 +3,7 @@ import hashlib
 from itsdangerous import BadSignature, SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 
 from app.models.base import Base, db
 
@@ -14,8 +14,9 @@ class Association(Base):
 
     user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
     task_id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
-    user_rel = relationship('User', back_populates='task_name')
-    task_rel = relationship('Task', back_populates='user_name')
+
+    user_name = relationship('User', backref=backref("association"))
+    task_name = relationship('Task', backref=backref("association"))
 
 
 class User(Base):
@@ -27,7 +28,11 @@ class User(Base):
     email = Column(String(254), nullable=False, unique=True)
     is_admin = Column(Boolean, default=False, nullable=False)
 
-    task_name = relationship("Association", back_populates="user_rel")
+    tasks = relationship("Task", secondary="association")
+
+    def assign_task(self, task_id):
+        self.association.append(Association(user_id = self.id,
+            task_id = task_id))
 
     def verify_password(self, password):
         if self.password == hashlib.md5(password).hexdigest():
@@ -50,6 +55,9 @@ class User(Base):
         user = User.query.get(data['name'])
         return user
 
+    def __repr__(self):
+        return '{}'.format(self.id)
+
 
 class Task(Base):
 
@@ -58,4 +66,11 @@ class Task(Base):
     title = Column(String(200), unique=True, nullable=False)
     status = Column(String(15), nullable=False)
 
-    user_name = relationship("Association", back_populates="user_rel")
+    users = relationship("User", secondary="association")
+
+    def assign_user(self, userid):
+        self.association.append(Association(user_id = userid,
+            task_id = self.id))
+
+    def __repr__(self):
+        return '{}'.format(self.title)
