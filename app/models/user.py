@@ -16,10 +16,14 @@ class UserAndTaskRelation(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     task_id = Column(Integer, ForeignKey('tasks.id'), nullable=False)
 
-    user_relation = relationship('User', backref=backref('user_task_relation'))
-    task_relation = relationship('Task', backref=backref('user_task_relation'))
+    user_relation = relationship('User',
+                                 backref=backref('user_task_relation',
+                                                 cascade="all, delete-orphan"))
+    task_relation = relationship('Task',
+                                 backref=backref('user_task_relation',
+                                                 cascade="all, delete-orphan"))
 
-    UniqueConstraint('user_id', 'task_id')
+    __table_args__ = (UniqueConstraint('user_id', 'task_id'),)
 
 
 class User(Base):
