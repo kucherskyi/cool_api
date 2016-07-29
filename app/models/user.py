@@ -12,6 +12,7 @@ from app.models.base import Base, db
 class UserAndTaskRelation(Base):
 
     __tablename__ = 'user_task_relation'
+    __table_args__ = (UniqueConstraint('user_id', 'task_id'),)
 
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     task_id = Column(Integer, ForeignKey('tasks.id'), nullable=False)
@@ -22,8 +23,6 @@ class UserAndTaskRelation(Base):
     task_relation = relationship('Task',
                                  backref=backref('user_task_relation',
                                                  cascade="all, delete-orphan"))
-
-    __table_args__ = (UniqueConstraint('user_id', 'task_id'),)
 
 
 class User(Base):
