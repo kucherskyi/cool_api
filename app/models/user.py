@@ -3,6 +3,7 @@ import hashlib
 from itsdangerous import BadSignature, SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import relationship, backref
 
 from app.models.base import Base, db
@@ -17,6 +18,8 @@ class UserAndTaskRelation(Base):
 
     user_relation = relationship('User', backref=backref('user_task_relation'))
     task_relation = relationship('Task', backref=backref('user_task_relation'))
+
+    UniqueConstraint('user_id', 'task_id')
 
 
 class User(Base):
@@ -33,7 +36,6 @@ class User(Base):
     def assign_task(self, task_id):
         self.user_task_relation.append(UserAndTaskRelation(user_id=self.id,
                                                            task_id=task_id))
-        db.session.commit()
 
     def verify_password(self, password):
         if self.password == hashlib.md5(password).hexdigest():
@@ -56,9 +58,6 @@ class User(Base):
         user = User.query.get(data['name'])
         return user
 
-    def __repr__(self):
-        return '{}'.format(self.id)
-
 
 class Task(Base):
 
@@ -69,9 +68,6 @@ class Task(Base):
 
     users = relationship('User', secondary='user_task_relation')
 
-    def assign_user(self, userid):
-        self.user_task_relation.append(UserAndTaskRelation(user_id=userid,
+    def assign_user(self, user_id):
+        self.user_task_relation.append(UserAndTaskRelation(user_id=user_id,
                                                            task_id=self.id))
-
-    def __repr__(self):
-        return '{}'.format(self.id)
