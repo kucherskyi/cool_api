@@ -1,12 +1,37 @@
 from flask import abort
-from flask_restful import marshal_with, reqparse, inputs
+from flask_restful import marshal_with, reqparse, inputs, fields
 import hashlib
 from sqlalchemy.exc import DataError, IntegrityError
 import re
 
 from app.controllers.controller import Base
-from app.controllers.marshalling_fields import *
 from app.models.user import User, db
+
+
+RETURN_USER = {
+    'id': fields.Integer,
+    'name': fields.String,
+    'email': fields.String,
+    'info': fields.String,
+    'is_admin': fields.Boolean,
+    'tasks': fields.String,
+    'created_at': fields.String,
+    'updated_at': fields.String
+}
+
+RETURN_USERS_LIST = {
+    'id': fields.Integer,
+    'name': fields.String
+}
+
+RETURN_USER_ID = {
+    'id': fields.Integer
+}
+
+RETURN_PUT_USER = {
+    'id': fields.Integer,
+    'info': fields.String
+}
 
 
 def email(address):
@@ -15,7 +40,7 @@ def email(address):
         return address
     else:
         raise ValueError('{} is not a valid email'.format(address))
-    
+
 
 post_user = reqparse.RequestParser()
 post_user.add_argument('name', type=str, required=True)
@@ -30,11 +55,11 @@ put_user.add_argument('info', type=str, required=True)
 
 
 class UsersList(Base):
-    @marshal_with(RESPONSE_USER_LIST)
+    @marshal_with(RETURN_USERS_LIST)
     def get(self):
         return User.query.all()
 
-    @marshal_with(RETURN_USER)
+    @marshal_with(RETURN_USER_ID)
     def post(self):
         args = post_user.parse_args()
         user = User(**args)
@@ -49,7 +74,7 @@ class UsersList(Base):
 
 
 class UserSingle(Base):
-    @marshal_with(RESPONSE_USER)
+    @marshal_with(RETURN_USER)
     def get(self, user_id):
         return User.query.get_or_404(user_id)
 
@@ -59,7 +84,7 @@ class UserSingle(Base):
         db.session.commit()
         return '', 204
 
-    @marshal_with(RETURN_PUT)
+    @marshal_with(RETURN_PUT_USER)
     def put(self, user_id):
         args = put_user.parse_args()
         user = User.query.get_or_404(user_id)
