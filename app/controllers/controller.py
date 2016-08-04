@@ -2,7 +2,7 @@ from flask import request, current_app
 from flask_restful import Resource as BaseResource
 from functools import wraps
 
-from app.models.user import User, db
+from app.models.user import User
 
 
 def auth_token_required(fn):

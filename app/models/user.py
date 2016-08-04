@@ -7,22 +7,7 @@ from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import relationship, backref
 
 from app.models.base import Base, db
-
-
-class UserAndTaskRelation(Base):
-
-    __tablename__ = 'user_task_relation'
-    __table_args__ = (UniqueConstraint('user_id', 'task_id'),)
-
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    task_id = Column(Integer, ForeignKey('tasks.id'), nullable=False)
-
-    user_relation = relationship('User',
-                                 backref=backref('user_task_relation',
-                                                 cascade="all, delete-orphan"))
-    task_relation = relationship('Task',
-                                 backref=backref('user_task_relation',
-                                                 cascade="all, delete-orphan"))
+from app.models.task import UserAndTaskRelation
 
 
 class User(Base):
@@ -34,7 +19,7 @@ class User(Base):
     email = Column(String(254), nullable=False, unique=True)
     is_admin = Column(Boolean, default=False, nullable=False)
 
-    tasks = relationship('Task', secondary='user_task_relation')
+    tasks = relationship('Task', secondary='user_task_relation', viewonly=True)
 
     def assign_task(self, task_id):
         self.user_task_relation.append(UserAndTaskRelation(user_id=self.id,
@@ -60,17 +45,3 @@ class User(Base):
             return None
         user = User.query.get(data['name'])
         return user
-
-
-class Task(Base):
-
-    __tablename__ = 'tasks'
-
-    title = Column(String(200), nullable=False)
-    status = Column(String(15), nullable=False)
-
-    users = relationship('User', secondary='user_task_relation')
-
-    def assign_user(self, user_id):
-        self.user_task_relation.append(UserAndTaskRelation(user_id=user_id,
-                                                           task_id=self.id))
