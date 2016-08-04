@@ -18,9 +18,9 @@ def create_app():
     from controllers.tasks import TaskSingle, Tasks, AssignTask
     api.add_resource(Index, '/api/index')
     api.add_resource(UsersList, '/api/users')
-    api.add_resource(UserSingle, '/api/users/<user_id>')
+    api.add_resource(UserSingle, '/api/users/<int:user_id>')
     api.add_resource(Tasks, '/api/tasks')
-    api.add_resource(TaskSingle, '/api/tasks/<task_id>')
+    api.add_resource(TaskSingle, '/api/tasks/<int:task_id>')
     api.add_resource(AssignTask, '/api/assign_task')
     return app
 

@@ -2,6 +2,7 @@ from flask import abort, current_app
 from flask_restful import marshal_with, reqparse, fields
 from sqlalchemy.exc import DataError, IntegrityError
 
+from app.const import TASK_STATUSES
 from app.controllers.controller import Base
 from app.models.task import Task, db, UserAndTaskRelation
 
@@ -24,12 +25,12 @@ RETURN_TASK_LIST = {
 
 post_task = reqparse.RequestParser()
 post_task.add_argument('title', type=str, required=True)
-post_task.add_argument('status', choices=['completed', 'in_progress'],
+post_task.add_argument('status', choices=TASK_STATUSES,
                        required=True)
 
 put_task = reqparse.RequestParser()
 put_task.add_argument(
-    'status', choices=['completed', 'in_progress'], required=True)
+    'status', choices=TASK_STATUSES, required=True)
 
 assign_task = reqparse.RequestParser()
 assign_task.add_argument('user_id', type=int, required=True)
@@ -95,11 +96,13 @@ class AssignTask(Base):
     def post(self):
         args = assign_task.parse_args()
         task = Task.query.get_or_404(args['task_id'])
-        task.assign_user(args['user_id'])
-        try:
-            db.session.add(task)
-            db.session.commit()
-        except IntegrityError as e:
-            db.session.rollback()
-            abort(400, str(e))
-        return task, 201
+        if task.is_assigned(args['task_id'], current_app.user.id):
+            task.assign_user(args['user_id'])
+            try:
+                db.session.add(task)
+                db.session.commit()
+            except IntegrityError as e:
+                db.session.rollback()
+                abort(400, str(e))
+            return task, 201
+        abort(403, 'Forbidden')

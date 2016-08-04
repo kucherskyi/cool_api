@@ -265,6 +265,22 @@ class TestAssignTask(BaseTestCase):
                                             headers=self.auth_header,
                                             data=params))
 
+    def test_post_assign_not_valid_fields(self):
+        DATA = {
+            'user_id': '1',
+            'task_id': '1'
+        }
+        task1 = Task(title='title1', status='in_progress')
+        task1.assign_user(1)
+        db.session.add(task1)
+        db.session.commit()
+        for key in DATA.keys():
+            params = DATA.copy()
+            del params[key]
+            self.assert400(self.client.post(self.ENDPOINT,
+                                            headers=self.auth_header,
+                                            data=params))
+
     def test_post_assign_integrity_error(self):
         task1 = Task(title='title1', status='in_progress')
         task1.assign_user(1)
@@ -289,6 +305,21 @@ class TestAssignTask(BaseTestCase):
                                headers=self.auth_header,
                                data={'user_id': 2, 'task_id': 1})
         self.assertEqual(res.status_code, 201)
+
+    def test_post_not_assigned_task(self):
+        task1 = Task(title='title1', status='in_progress')
+        task1.assign_user(1)
+        db.session.add(task1)
+        db.session.commit()
+        user2 = User(name='user2', email='email2@em.co')
+        user2.password = hashlib.md5('1').hexdigest()
+        db.session.add(user2)
+        db.session.commit()
+        token_for_2_user = self.login('user2', '1').json['token']
+        res = self.client.post(self.ENDPOINT,
+                               headers={'token': token_for_2_user},
+                               data={'user_id': 2, 'task_id': 1})
+        self.assert403(res)
 
 if __name__ == '__main__':
     unittest.main()

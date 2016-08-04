@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy import UniqueConstraint, Enum
 from sqlalchemy.orm import relationship, backref
 
+from app.const import TASK_STATUSES
 from app.models.base import Base, db
 
 
@@ -26,7 +27,7 @@ class Task(Base):
     __tablename__ = 'tasks'
 
     title = Column(String(200), nullable=False)
-    status = Column(Enum('completed', 'in_progress', name='statuses'),
+    status = Column(Enum(*TASK_STATUSES, name='statuses'),
                     nullable=False)
 
     users = relationship('User', secondary='user_task_relation', viewonly=True)
