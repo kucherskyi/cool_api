@@ -2,9 +2,8 @@ from flask import current_app
 import hashlib
 from itsdangerous import BadSignature, SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey
-from sqlalchemy import UniqueConstraint
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy import Column, String, Boolean, Text
+from sqlalchemy.orm import relationship
 
 from app.models.base import Base, db
 from app.models.task import UserAndTaskRelation

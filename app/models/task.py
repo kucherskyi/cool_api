@@ -42,3 +42,5 @@ class Task(Base):
             UserAndTaskRelation.user_id == user_id).filter(
             UserAndTaskRelation.task_id == task_id)
         return is_assigned.count() == 1
+
+

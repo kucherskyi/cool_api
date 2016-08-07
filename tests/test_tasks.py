@@ -27,29 +27,105 @@ class TestTasks(BaseTestCase):
         db.session.commit()
         token = self.login('user2', '1').json['token']
         res = self.client.get(self.ENDPOINT, headers={'token': token})
-        self.assertEqual(len(res.json), 0)
+        self.assertEqual(len(res.json['tasks']), 0)
 
     def test_get_tasks_count_for_current_user(self):
         res = self.client.get(self.ENDPOINT, headers=self.auth_header)
         self.assert200(res)
-        self.assertEqual(len(res.json), 0)
+        self.assertEqual(len(res.json['tasks']), 0)
         task1 = Task(title='title1', status='in_progress')
         task1.assign_user(1)
         db.session.add(task1)
         db.session.commit()
         res = self.client.get(self.ENDPOINT, headers=self.auth_header)
-        self.assertEqual(len(res.json), 1)
+        self.assertEqual(len(res.json['tasks']), 1)
 
-    def test_get_task_fields(self):
+    def test_get_task_fields_default(self):
         task1 = Task(title='title1', status='in_progress')
         task1.assign_user(1)
         db.session.add(task1)
         db.session.commit()
         res = self.client.get(self.ENDPOINT, headers=self.auth_header)
-        self.assertDictEqual(res.json[0], {'title': 'title1',
-                                           'status': 'in_progress',
-                                           'id': 1,
-                                           'users': '[1]'})
+        self.assertDictEqual(res.json, {'limit': 20,
+                                        'offset': 0,
+                                        'tasks': [{'title': 'title1',
+                                                   'status': 'in_progress',
+                                                   'id': 1,
+                                                   'users': '[1]'}],
+                                        'total': 1,
+                                        'user': 1})
+
+    def test_get_task_fields_offset_limit(self):
+        for i in range(30):
+            task1 = Task(title='title' + str(i), status='in_progress')
+            task1.assign_user(1)
+            db.session.add(task1)
+        db.session.commit()
+        res = self.client.get(self.ENDPOINT, headers=self.auth_header)
+        self.assertEqual(res.json['limit'], 20)
+        self.assertEqual(res.json['offset'], 0)
+        self.assertEqual(len(res.json['tasks']), 20)
+        self.assertEqual(res.json['tasks'][0]['id'], 1)
+        self.assertEqual(res.json['total'], 30)
+        self.assertEqual(res.json['user'], 1)
+        res = self.client.get(self.ENDPOINT + '?offset=10&limit=5',
+                              headers=self.auth_header)
+        self.assertEqual(res.json['limit'], 5)
+        self.assertEqual(res.json['offset'], 10)
+        self.assertEqual(len(res.json['tasks']), 5)
+        self.assertEqual(res.json['tasks'][0]['id'], 11)
+        self.assertEqual(res.json['total'], 30)
+        self.assertEqual(res.json['user'], 1)
+
+    def test_get_task_filtering_invalid_method(self):
+        task1 = Task(title='title1', status='in_progress')
+        task1.assign_user(1)
+        db.session.add(task1)
+        db.session.commit()
+        res = self.client.get(self.ENDPOINT + '?wrong=method',
+                              headers=self.auth_header)
+        self.assertDictEqual(res.json, {'limit': 20,
+                                        'offset': 0,
+                                        'tasks': [{'title': 'title1',
+                                                   'status': 'in_progress',
+                                                   'id': 1,
+                                                   'users': '[1]'}],
+                                        'total': 1,
+                                        'user': 1})
+
+    def test_get_task_filtering_invalid_method_argument(self):
+        task1 = Task(title='title1', status='in_progress')
+        task1.assign_user(1)
+        db.session.add(task1)
+        db.session.commit()
+        res = self.client.get(self.ENDPOINT + '?status=wrong',
+                              headers=self.auth_header)
+        self.assert400(res)
+        self.assertIn('status', res.json['message'])
+
+    def test_get_task_valid_filtering(self):
+        task1 = Task(title='title1', status='in_progress')
+        task1.assign_user(1)
+        task2 = Task(title='title2', status='completed')
+        task2.assign_user(1)
+        db.session.add(task1)
+        db.session.add(task2)
+        db.session.commit()
+        res = self.client.get(self.ENDPOINT,
+                              headers=self.auth_header)
+        self.assert200(res)
+        self.assertEqual(len(res.json['tasks']), 2)
+        res = self.client.get(self.ENDPOINT + '?status=in_progress',
+                              headers=self.auth_header)
+        self.assert200(res)
+        self.assertEqual(len(res.json['tasks']), 1)
+        self.assertEqual(res.json['tasks'][0]['status'], 'in_progress')
+
+        res = self.client.get(self.ENDPOINT + '?status=completed',
+                              headers=self.auth_header)
+        self.assert200(res)
+        self.assertEqual(len(res.json['tasks']), 1)
+        self.assertEqual(res.json['tasks'][0]['status'], 'completed')
 
     def test_post_tasks_without_required(self):
         for key in self.DATA.keys():
