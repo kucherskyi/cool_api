@@ -46,7 +46,7 @@ class Tasks(Base):
         tasks = Task.query.join(UserAndTaskRelation).filter(
             UserAndTaskRelation.user_id == current_app.user.id)
         for key, value in args.items():
-            if not value or not dir(Task):
+            if not value:
                 continue
             tasks = tasks.filter(getattr(Task, key) == value)
         return tasks
