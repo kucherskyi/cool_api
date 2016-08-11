@@ -1,7 +1,7 @@
 from flask import request, current_app, abort
 from flask_restful import Resource as BaseResource
 from flask_restful import reqparse, marshal
-from sqlalchemy.exc import DataError
+
 from functools import wraps
 
 from app.models.user import User
@@ -29,19 +29,16 @@ def pagination(pagination_fields):
     def decorate(fn):
         def wrapper(*args, **kwargs):
             paginate = parser.parse_args()
+            for items in paginate.values():
+                if items < 0:
+                    abort(400, 'Bad request')
             query = fn(*args, **kwargs)
-            if paginate['offset'] >= query.count():
-                paginate['offset'] = query.count() - 1
-            try:
-                result = query.offset(
-                    paginate['offset']).limit(paginate['limit'])
-                return {'user': current_app.user.id,
-                        'total': query.count(),
-                        'tasks': marshal(result.all(), pagination_fields),
-                        'offset': paginate['offset'],
-                        'limit': paginate['limit']}
-            except DataError as e:
-                abort(400, str(e))
+            result = query.offset(paginate['offset']).limit(paginate['limit'])
+            return {'user': current_app.user.id,
+                    'total': query.count(),
+                    'tasks': marshal(result.all(), pagination_fields),
+                    'offset': paginate['offset'],
+                    'limit': paginate['limit']}
         return wrapper
     return decorate
 

@@ -11,6 +11,7 @@ RETURN_TASK = {
     'title': fields.String,
     'status': fields.String,
     'users': fields.String,
+    'comments': fields.String,
     'created_at': fields.String,
     'updated_at': fields.String
 }
@@ -46,9 +47,8 @@ class Tasks(Base):
         tasks = Task.query.join(UserAndTaskRelation).filter(
             UserAndTaskRelation.user_id == current_app.user.id)
         for key, value in args.items():
-            if not value:
-                continue
-            tasks = tasks.filter(getattr(Task, key) == value)
+            if value:
+                tasks = tasks.filter(getattr(Task, key) == value)
         return tasks
 
     @marshal_with(RETURN_TASK_LIST)
