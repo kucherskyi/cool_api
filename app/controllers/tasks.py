@@ -11,7 +11,6 @@ RETURN_TASK = {
     'title': fields.String,
     'status': fields.String,
     'users': fields.String,
-    'comments': fields.String,
     'created_at': fields.String,
     'updated_at': fields.String
 }
