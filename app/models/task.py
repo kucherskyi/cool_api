@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship, backref
 
 from app.const import TASK_STATUSES
 from app.models.base import Base, db
+from app.models.comment import Comment
 
 
 class UserAndTaskRelation(Base):
@@ -30,6 +31,7 @@ class Task(Base):
     status = Column(Enum(*TASK_STATUSES, name='statuses'),
                     nullable=False)
 
+    comments = relationship('Comment', backref='tasks')
     users = relationship('User', secondary='user_task_relation', viewonly=True)
 
     def assign_user(self, user_id):

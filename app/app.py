@@ -16,6 +16,9 @@ def create_app():
     from controllers.index import Index
     from controllers.user import UsersList, UserSingle
     from controllers.tasks import TaskSingle, Tasks, AssignTask
+    from controllers.comments import Comments
+    app.add_url_rule('/api/tasks/<int:task_id>/comments',
+                     view_func=Comments.as_view('comments'))
     api.add_resource(Index, '/api/index')
     api.add_resource(UsersList, '/api/users')
     api.add_resource(UserSingle, '/api/users/<int:user_id>')
