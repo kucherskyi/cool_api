@@ -36,7 +36,7 @@ def pagination(pagination_fields):
             result = query.offset(paginate['offset']).limit(paginate['limit'])
             return {'user': current_app.user.id,
                     'total': query.count(),
-                    'tasks': marshal(result.all(), pagination_fields),
+                    'items': marshal(result.all(), pagination_fields),
                     'offset': paginate['offset'],
                     'limit': paginate['limit']}
         return wrapper
