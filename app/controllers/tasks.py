@@ -3,7 +3,7 @@ from flask_restful import marshal_with, reqparse, fields
 from sqlalchemy.exc import DataError, IntegrityError
 
 from app.const import TASK_STATUSES
-from app.controllers.controller import Base
+from app.controllers.controller import Base, pagination
 from app.models.task import Task, db, UserAndTaskRelation
 
 RETURN_TASK = {
@@ -22,15 +22,16 @@ RETURN_TASK_LIST = {
     'users': fields.String,
 }
 
+get_task = reqparse.RequestParser()
+get_task.add_argument('status', choices=TASK_STATUSES, location='args')
+get_task.add_argument('created_at', type=str, location='args')
 
 post_task = reqparse.RequestParser()
 post_task.add_argument('title', type=str, required=True)
-post_task.add_argument('status', choices=TASK_STATUSES,
-                       required=True)
+post_task.add_argument('status', choices=TASK_STATUSES, required=True)
 
 put_task = reqparse.RequestParser()
-put_task.add_argument(
-    'status', choices=TASK_STATUSES, required=True)
+put_task.add_argument('status', choices=TASK_STATUSES, required=True)
 
 assign_task = reqparse.RequestParser()
 assign_task.add_argument('user_id', type=int, required=True)
@@ -39,11 +40,15 @@ assign_task.add_argument('task_id', type=int, required=True)
 
 class Tasks(Base):
 
-    @marshal_with(RETURN_TASK_LIST)
+    @pagination(RETURN_TASK_LIST)
     def get(self):
+        args = get_task.parse_args()
         tasks = Task.query.join(UserAndTaskRelation).filter(
             UserAndTaskRelation.user_id == current_app.user.id)
-        return tasks.all()
+        for key, value in args.items():
+            if value:
+                tasks = tasks.filter(getattr(Task, key) == value)
+        return tasks
 
     @marshal_with(RETURN_TASK_LIST)
     def post(self):
@@ -60,6 +65,7 @@ class Tasks(Base):
 
 
 class TaskSingle(Base):
+
     @marshal_with(RETURN_TASK)
     def get(self, task_id):
         task = Task.query.get_or_404(task_id)
