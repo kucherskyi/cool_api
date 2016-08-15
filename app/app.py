@@ -2,6 +2,7 @@ from flask import Flask, jsonify, g
 from flask_httpauth import HTTPBasicAuth
 from flask_restful import Api
 
+import sql_connect as sq
 from models.user import User
 
 
@@ -11,14 +12,16 @@ def create_app():
     app.config.from_object('config.default')
     app.config.from_envvar('APP_SETTINGS', silent=True)
     app.add_url_rule('/api/login', 'login', _get_token)
-    from models.user import db
+    from models.base import db
     db.init_app(app)
     from controllers.index import Index
     from controllers.user import UsersList, UserSingle
     from controllers.tasks import TaskSingle, Tasks, AssignTask
     from controllers.comments import Comments
+    app.before_request(sq.before_request)
+    app.after_request(sq.after_request)
     app.add_url_rule('/api/tasks/<int:task_id>/comments',
-                     view_func=Comments.as_view('comments'))
+                     view_func=Comments.as_view('comments2'))
     api.add_resource(Index, '/api/index')
     api.add_resource(UsersList, '/api/users')
     api.add_resource(UserSingle, '/api/users/<int:user_id>')

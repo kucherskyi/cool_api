@@ -1,7 +1,6 @@
 from flask import request, current_app, abort
 from flask_restful import Resource as BaseResource
 from flask_restful import reqparse, marshal
-
 from functools import wraps
 
 from app.models.user import User

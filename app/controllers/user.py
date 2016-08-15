@@ -7,7 +7,8 @@ from sqlalchemy.exc import DataError, IntegrityError
 import re
 
 from app.controllers.controller import Base
-from app.models.user import User, db
+from app.models.user import User
+from app.models.base import db
 
 
 RETURN_USER = {

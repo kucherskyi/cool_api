@@ -31,7 +31,7 @@ class Task(Base):
     status = Column(Enum(*TASK_STATUSES, name='statuses'),
                     nullable=False)
 
-    comments = relationship('Comment', backref='tasks')
+    comments = relationship(Comment)
     users = relationship('User', secondary='user_task_relation', viewonly=True)
 
     def assign_user(self, user_id):
@@ -44,5 +44,3 @@ class Task(Base):
             UserAndTaskRelation.user_id == user_id).filter(
             UserAndTaskRelation.task_id == task_id)
         return is_assigned.count() == 1
-
-

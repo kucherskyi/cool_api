@@ -4,7 +4,8 @@ from flask_testing import TestCase
 import hashlib
 
 from app.app import create_app
-from app.models.user import User, db
+from app.models.user import User
+from app.models.base import db
 
 
 class BaseTestCase(TestCase):
