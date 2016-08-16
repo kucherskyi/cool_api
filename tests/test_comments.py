@@ -2,9 +2,10 @@ import unittest
 import hashlib
 
 from tests.base_test import BaseTestCase
-from app.models.user import db, User
+from app.models.user import User
 from app.models.task import Task
 from app.models.comment import Comment
+from app.models.base import db
 
 
 class TestComments(BaseTestCase):
@@ -18,7 +19,7 @@ class TestComments(BaseTestCase):
         token = self.login().json['token']
         res = self.client.get(self.ENDPOINT + '/1/comments',
                               headers={'token': token})
-        self.assert400(res)
+        self.assert403(res)
 
     def test_get_comments_for_not_assigned_task(self):
         task1 = Task(title='title1', status='in_progress')
@@ -34,7 +35,7 @@ class TestComments(BaseTestCase):
         token = self.login('user2', '1').json['token']
         res = self.client.get(self.ENDPOINT + '/1/comments',
                               headers={'token': token})
-        self.assert400(res)
+        self.assert403(res)
 
     def test_get_comments_for_assigned_task(self):
         task1 = Task(title='title1', status='in_progress')
@@ -59,7 +60,8 @@ class TestComments(BaseTestCase):
         token = self.login().json['token']
         res = self.client.post(self.ENDPOINT + '/1/comments',
                                headers={'token': token},
-                               data={'text': 'yey',
-                                     'user_id': 1,
-                                     'task_id': 1})
-        self.assert201(res)
+                               data={'text': 'yey'})
+        self.assertEqual(res.status_code, 201)
+
+if __name__ == '__main__':
+    unittest.main()

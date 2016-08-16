@@ -2,8 +2,9 @@ from flask import Flask, jsonify, g
 from flask_httpauth import HTTPBasicAuth
 from flask_restful import Api
 
-import sql_connect as sq
+from endpoints import COMMENTS
 from models.user import User
+import sql_connect as sq
 
 
 def create_app():
@@ -21,7 +22,7 @@ def create_app():
     app.before_request(sq.before_request)
     app.after_request(sq.after_request)
     app.add_url_rule('/api/tasks/<int:task_id>/comments',
-                     view_func=Comments.as_view('comments2'))
+                     view_func=Comments.as_view(COMMENTS))
     api.add_resource(Index, '/api/index')
     api.add_resource(UsersList, '/api/users')
     api.add_resource(UserSingle, '/api/users/<int:user_id>')
