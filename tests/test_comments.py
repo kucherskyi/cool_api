@@ -1,5 +1,4 @@
 import hashlib
-import json
 import unittest
 
 from tests.base_test import BaseTestCase
@@ -67,7 +66,7 @@ class TestComments(BaseTestCase):
         token = self.login('user2', '1').json['token']
         res = self.client.post('api/tasks/1/comments',
                                headers={'token': token},
-                               data=json.dumps({'text': 'yey'}))
+                               data={'text': 'yey'})
         self.assertEqual(res.status_code, 403)
 
     def test_post_comments_with_no_text(self):
@@ -78,7 +77,7 @@ class TestComments(BaseTestCase):
         token = self.login().json['token']
         res = self.client.post('api/tasks/1/comments',
                                headers={'token': token},
-                               data=json.dumps({'not_text': 'yey'}))
+                               data={'not_text': 'yey'})
         self.assertEqual(res.status_code, 400)
 
     def test_post_comments_for_assigned_task(self):
@@ -89,7 +88,7 @@ class TestComments(BaseTestCase):
         token = self.login().json['token']
         res = self.client.post('api/tasks/1/comments',
                                headers={'token': token},
-                               data=json.dumps({'text': 'yey'}))
+                               data={'text': 'yey'})
         self.assertEqual(res.status_code, 201)
         res = self.client.get('api/tasks/1/comments',
                               headers={'token': token})
