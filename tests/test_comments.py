@@ -99,5 +99,24 @@ class TestComments(BaseTestCase):
         self.assertEqual(comment.user_id, 1)
         self.assertEqual(comment.task_id, 1)
 
+    def test_post_comments_for_assigned_task_form_data(self):
+        task1 = Task(title='title1', status='in_progress')
+        task1.assign_user(1)
+        db.session.add(task1)
+        db.session.commit()
+        token = self.login().json['token']
+        res = self.client.post('api/tasks/1/comments',
+                               headers={'token': token},
+                               data={'text': 'yey'},
+                               content_type='multipart/form-data')
+        self.assertEqual(res.status_code, 201)
+        res = self.client.get('api/tasks/1/comments',
+                              headers={'token': token})
+        self.assertDictEqual(res.json[0], {'text': 'yey', 'user_id': 1})
+        comment = Comment.query.get(1)
+        self.assertEqual(comment.text, 'yey')
+        self.assertEqual(comment.user_id, 1)
+        self.assertEqual(comment.task_id, 1)
+
 if __name__ == '__main__':
     unittest.main()
