@@ -22,10 +22,13 @@ class Comments(MethodView):
         return jsonify(data)
 
     def post(self, task_id):
+        try:
+            comment = json.loads(request.data)['text']
+        except KeyError as e:
+            abort(400, 'missing {} in data'.format(str(e)))
         if not Comments.is_assigned(current_app.user.id, task_id):
             abort(403, 'Forbidden')
         cursor = g.connection.cursor()
-        comment = json.loads(request.data)['text']
         query = '''INSERT INTO comments
                                (text, user_id, task_id, created_at)
                         VALUES (%s,%s,%s,%s)

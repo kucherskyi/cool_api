@@ -70,6 +70,17 @@ class TestComments(BaseTestCase):
                                data=json.dumps({'text': 'yey'}))
         self.assertEqual(res.status_code, 403)
 
+    def test_post_comments_with_no_text(self):
+        task1 = Task(title='title1', status='in_progress')
+        task1.assign_user(1)
+        db.session.add(task1)
+        db.session.commit()
+        token = self.login().json['token']
+        res = self.client.post('api/tasks/1/comments',
+                               headers={'token': token},
+                               data=json.dumps({'not_text': 'yey'}))
+        self.assertEqual(res.status_code, 400)
+
     def test_post_comments_for_assigned_task(self):
         task1 = Task(title='title1', status='in_progress')
         task1.assign_user(1)

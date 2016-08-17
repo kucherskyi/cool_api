@@ -16,7 +16,6 @@ class BaseTestCase(TestCase):
 
     def setUp(self):
         current_app.config['TESTING'] = True
-        current_app.config['DEBUG'] = True
         current_app.config['SQLALCHEMY_DATABASE_URI'] = \
             'postgresql://admin:pass@localhost:5432/test'
         db.create_all()
