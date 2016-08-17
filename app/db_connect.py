@@ -4,16 +4,16 @@ from urlparse import urlparse
 
 from endpoints import COMMENTS
 
-CONNECTION_STRING = ''
+_CONNECTION_STRING = ''
 
 
 def establish_connection(app):
     if not _CONNECTION_STRING:
-        global CONNECTION_STRING
+        global _CONNECTION_STRING
         db_uri = urlparse(app.config['SQLALCHEMY_DATABASE_URI'])
-        CONNECTION_STRING = "host={} dbname={} user={} password={}".format(
+        _CONNECTION_STRING = "host={} dbname={} user={} password={}".format(
             db_uri.hostname, db_uri.path[1:], db_uri.username, db_uri.password)
-    connection = psycopg2.connect(CONNECTION_STRING)
+    connection = psycopg2.connect(_CONNECTION_STRING)
     return connection
 
 

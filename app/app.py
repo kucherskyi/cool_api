@@ -4,7 +4,7 @@ from flask_restful import Api
 
 from endpoints import COMMENTS
 from models.user import User
-import sql_connect as sq
+import db_connect
 
 
 def create_app():
@@ -19,8 +19,8 @@ def create_app():
     from controllers.user import UsersList, UserSingle
     from controllers.tasks import TaskSingle, Tasks, AssignTask
     from controllers.comments import Comments
-    app.before_request(sq.before_request)
-    app.after_request(sq.after_request)
+    app.before_request(db_connect.before_request)
+    app.after_request(db_connect.after_request)
     app.add_url_rule('/api/tasks/<int:task_id>/comments',
                      view_func=Comments.as_view(COMMENTS))
     api.add_resource(Index, '/api/index')

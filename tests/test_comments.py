@@ -1,5 +1,6 @@
-import unittest
 import hashlib
+import json
+import unittest
 
 from tests.base_test import BaseTestCase
 from app.models.user import User
@@ -52,16 +53,40 @@ class TestComments(BaseTestCase):
                                            'user_id': 1})
         self.assertEqual(len(res.json), 1)
 
+    def test_post_comments_for_not_assigned_task(self):
+        task1 = Task(title='title1', status='in_progress')
+        task1.assign_user(1)
+        comment1 = Comment(text='yey', user_id=1, task_id=1)
+        db.session.add(task1)
+        db.session.add(comment1)
+        db.session.commit()
+        user2 = User(name='user2', email='email2@em.co')
+        user2.password = hashlib.md5('1').hexdigest()
+        db.session.add(user2)
+        db.session.commit()
+        token = self.login('user2', '1').json['token']
+        res = self.client.post('api/tasks/1/comments',
+                               headers={'token': token},
+                               data=json.dumps({'text': 'yey'}))
+        self.assertEqual(res.status_code, 403)
+
     def test_post_comments_for_assigned_task(self):
         task1 = Task(title='title1', status='in_progress')
         task1.assign_user(1)
         db.session.add(task1)
         db.session.commit()
         token = self.login().json['token']
-        res = self.client.post(self.ENDPOINT + '/1/comments',
+        res = self.client.post('api/tasks/1/comments',
                                headers={'token': token},
-                               data={'text': 'yey'})
+                               data=json.dumps({'text': 'yey'}))
         self.assertEqual(res.status_code, 201)
+        res = self.client.get('api/tasks/1/comments',
+                              headers={'token': token})
+        self.assertDictEqual(res.json[0], {'text': 'yey', 'user_id': 1})
+        comment = Comment.query.get(1)
+        self.assertEqual(comment.text, 'yey')
+        self.assertEqual(comment.user_id, 1)
+        self.assertEqual(comment.task_id, 1)
 
 if __name__ == '__main__':
     unittest.main()
