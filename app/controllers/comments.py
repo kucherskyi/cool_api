@@ -1,7 +1,6 @@
 from datetime import datetime
 from flask import abort, current_app, g, jsonify, request
 from flask.views import MethodView
-from werkzeug.exceptions import BadRequestKeyError
 
 from app.controllers.controller import auth_token_required
 
@@ -23,17 +22,17 @@ class Comments(MethodView):
         return jsonify(data)
 
     def post(self, task_id):
-        if request.mimetype in ('multipart/form-data',
-                                'application/x-www-form-urlencoded'):
-            try:
-                comment = request.form['text']
-            except BadRequestKeyError:
-                abort(400, 'not valid data')
+        if request.mimetype == 'application/json':
+            data = request.json
         else:
-            try:
-                comment = request.json['text']
-            except KeyError:
-                abort(400, 'not valid data')
+            data = request.form
+        try:
+            comment = data['text']
+        except KeyError as e:
+            return jsonify({'message':
+                            {e.message:
+                             'Missing required parameter '
+                             'in the post body'}}), 400
         if not Comments.is_assigned(current_app.user.id, task_id):
             abort(403, 'Forbidden')
         cursor = g.connection.cursor()
