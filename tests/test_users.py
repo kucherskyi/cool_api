@@ -3,7 +3,8 @@ import unittest
 import hashlib
 
 from tests.base_test import BaseTestCase
-from app.models.user import db, User
+from app.models.user import User
+from app.models.base import db
 
 
 class TestUserList(BaseTestCase):

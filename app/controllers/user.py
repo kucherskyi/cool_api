@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from flask import abort
 from flask_restful import marshal_with, reqparse, inputs, fields
 import hashlib
@@ -5,7 +7,8 @@ from sqlalchemy.exc import DataError, IntegrityError
 import re
 
 from app.controllers.controller import Base
-from app.models.user import User, db
+from app.models.user import User
+from app.models.base import db
 
 
 RETURN_USER = {
@@ -88,7 +91,7 @@ class UserSingle(Base):
     def put(self, user_id):
         args = put_user.parse_args()
         user = User.query.get_or_404(user_id)
-        user.info = args['info']
+        user.info =  args['info']
         try:
             db.session.commit()
             return user, 200

@@ -2,7 +2,8 @@ import json
 import hashlib
 import unittest
 
-from app.models.user import User, db
+from app.models.user import User
+from app.models.base import db
 from tests.base_test import BaseTestCase
 
 
