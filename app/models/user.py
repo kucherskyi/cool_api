@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship
 
 from app.models.base import Base
 from app.models.task import UserAndTaskRelation
+from app.models.comment import Comment
 
 
 class User(Base):
@@ -18,6 +19,7 @@ class User(Base):
     email = Column(String(254), nullable=False, unique=True)
     is_admin = Column(Boolean, default=False, nullable=False)
 
+    comments = relationship(Comment)
     tasks = relationship('Task', secondary='user_task_relation', viewonly=True)
 
     def assign_task(self, task_id):
