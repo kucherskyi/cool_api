@@ -2,8 +2,8 @@
 <title>User comments report</title>
 <table style="border: 1px solid black">
 <thead >
-{% for k in items[0].keys()%}
-<th style="text-align: left; padding: 3px">{{k}}</th>
+{% for field in items[0].keys()%}
+<th style="text-align: left; padding: 3px">{{field}}</th>
 {% endfor %}
 </thead>
 {% for user in items %}

@@ -20,70 +20,70 @@ from flask_restful import reqparse
 from flask_mail import Mail, Message
 import json
 from sqlalchemy import func
+import tempfile
 from xhtml2pdf import pisa
 
 from app.controllers.controller import Base
+from app.const import FORMATS
 from app.models.comment import Comment
 from app.models.user import User
-from app.const import REPORT_FORMATS
 
 parser = reqparse.RequestParser()
-parser.add_argument('format', choices=REPORT_FORMATS,
+parser.add_argument('format', choices=FORMATS.keys(),
                     location='args',
                     default='json')
 
 
+def admin_required(fn):
+    def decorated(*args, **kwargs):
+        if current_app.user.is_admin:
+            return fn(*args, **kwargs)
+        abort(403, 'Forbidden')
+    return decorated
+
+
 class Reports(Base):
 
-    @staticmethod
-    def send_mail():
-        mail = Mail(current_app)
-        msg = Message('Report', sender='testmicoac@gmail.com',
-                      recipients=[current_app.user.email])
-        msg.body = 'Report'
-        with open('/home/artem/tmp.json') as fp:
-            msg.attach('/home/artem/tmp.json', 'application/json', fp.read())
-        mail.send(msg)
+    method_decorators = [admin_required] + Base.method_decorators[:]
 
     @staticmethod
-    def generate_json(data):
-        with open('/home/artem/tmp.json', 'w') as tmp:
-            tmp.write(json.dumps(data, sort_keys=True,
-                                 indent=4, separators=(',', ': ')))
+    def send_mail(data, formt):
+        temp = tempfile.TemporaryFile()
+        if formt == 'json':
+            temp.write(json.dumps(data,
+                                  sort_keys=True,
+                                  indent=4,
+                                  separators=(',', ': ')))
 
-    @staticmethod
-    def generate_csv(data):
-        with open('/home/artem/tmp.csv', 'w') as csvtemp:
+        elif formt == 'csv':
             headers = data[0].keys()
-            writer = csv.DictWriter(csvtemp, fieldnames=headers)
+            writer = csv.DictWriter(temp, fieldnames=headers)
             writer.writeheader()
             for item in data:
                 writer.writerow(item)
 
-    @staticmethod
-    def generate_pdf(data):
-        with open('/home/artem/tmp.pdf', "w+b") as tmp:
+        elif formt == 'pdf':
             template = render_template('/report_comments.html', items=data)
-            pisa.CreatePDF(template, dest=tmp)
+            pisa.CreatePDF(template, dest=temp)
+
+        temp.seek(0)
+        mail = Mail(current_app)
+        msg = Message('Report', sender='testmicoac@gmail.com',
+                      recipients=[current_app.user.email])
+        msg.body = 'Report'
+        msg.attach('Report', FORMATS.get(formt), temp.read())
+        mail.send(msg)
+        temp.close()
 
 
 class UserComments(Reports):
+
     def get(self):
         formt = parser.parse_args()
-        import pdb; pdb.set_trace()
-        if not current_app.user.is_admin:
-            abort(403, 'Forbidden')
-        query = User.query.add_columns(func.count()).\
-            join(Comment).group_by(User.id)
+        query = User.query.add_columns(func.count())
+        query = query.join(Comment).group_by(User.id)
         count_list = []
         for el in query.all():
             count_list.append({'username': el[0].name, 'count': el[1]})
-        if formt['format'] == 'json':
-            Reports.generate_json(count_list)
-        elif formt['format'] == 'csv':
-            Reports.generate_csv(count_list)
-        elif formt['format'] == 'pdf':
-            Reports.generate_pdf(count_list)
-        Reports.send_mail()
-
-        return count_list, 200
+        self.send_mail(count_list, formt['format'])
+        return {'status': 'sent'}, 200
