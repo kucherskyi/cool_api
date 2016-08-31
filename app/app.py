@@ -30,7 +30,7 @@ def create_app():
     api.add_resource(Tasks, '/api/tasks')
     api.add_resource(TaskSingle, '/api/tasks/<int:task_id>')
     api.add_resource(AssignTask, '/api/assign_task')
-    api.add_resource(UserComments, '/api/reports')
+    api.add_resource(UserComments, '/api/reports/user_comments')
     return app
 
 auth = HTTPBasicAuth()

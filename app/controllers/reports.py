@@ -14,19 +14,22 @@ next improvement will be moving reports generation to another server.
 Please think about solution and investigate libraries you will use.
 '''
 
-import csv
-from flask import current_app, abort, render_template
+from flask import current_app, abort
 from flask_restful import reqparse
-from flask_mail import Mail, Message
-import json
 from sqlalchemy import func
-import tempfile
-from xhtml2pdf import pisa
+
 
 from app.controllers.controller import Base
 from app.const import FORMATS
+from app.file_generator import *
+from app.email_sender import *
 from app.models.comment import Comment
 from app.models.user import User
+
+
+FORMAT_FUNC = {'json': generate_json,
+               'csv': generate_csv,
+               'pdf': generate_pdf}
 
 parser = reqparse.RequestParser()
 parser.add_argument('format', choices=FORMATS.keys(),
@@ -46,44 +49,40 @@ class Reports(Base):
 
     method_decorators = [admin_required] + Base.method_decorators[:]
 
-    @staticmethod
-    def send_mail(data, formt):
-        temp = tempfile.TemporaryFile()
-        if formt == 'json':
-            temp.write(json.dumps(data,
-                                  sort_keys=True,
-                                  indent=4,
-                                  separators=(',', ': ')))
+    def get(self):
+        args = parser.parse_args()
+        data = self.get_data()
+        file = FORMAT_FUNC.get(args['format'])(data, template=self.template,
+                                               delimiter=self.delimiter,
+                                               indent=self.indent)
+        try:
+            send_mail(current_app, file, FORMATS.get(args['format']))
+        except Exception as e:
+            abort(400, str(e))
+        file.close()
+        return {'status': 'sent'}, 200
 
-        elif formt == 'csv':
-            headers = data[0].keys()
-            writer = csv.DictWriter(temp, fieldnames=headers)
-            writer.writeheader()
-            for item in data:
-                writer.writerow(item)
-
-        elif formt == 'pdf':
-            template = render_template('/report_comments.html', items=data)
-            pisa.CreatePDF(template, dest=temp)
-
-        temp.seek(0)
-        mail = Mail(current_app)
-        msg = Message('Report', sender='testmicoac@gmail.com',
-                      recipients=[current_app.user.email])
-        msg.body = 'Report'
-        msg.attach('Report', FORMATS.get(formt), temp.read())
-        mail.send(msg)
-        temp.close()
+    def get_data():
+        pass
 
 
 class UserComments(Reports):
 
-    def get(self):
-        formt = parser.parse_args()
+    template = '/report_comments.html'
+    delimiter = '|'
+    indent = 4
+
+    def get_data(self):
         query = User.query.add_columns(func.count())
         query = query.join(Comment).group_by(User.id)
         count_list = []
         for el in query.all():
             count_list.append({'username': el[0].name, 'count': el[1]})
-        self.send_mail(count_list, formt['format'])
-        return {'status': 'sent'}, 200
+        return count_list
+
+
+a = Reports()
+
+
+class B(Reports):
+    pass
