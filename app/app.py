@@ -19,7 +19,7 @@ def create_app():
     from controllers.user import UsersList, UserSingle
     from controllers.tasks import TaskSingle, Tasks, AssignTask
     from controllers.comments import Comments
-    from controllers.reports import UserComments
+    from controllers.reports import UserComments, TaskStats
     app.before_request(db_connect.before_request)
     app.after_request(db_connect.after_request)
     app.add_url_rule('/api/tasks/<int:task_id>/comments',
@@ -31,6 +31,7 @@ def create_app():
     api.add_resource(TaskSingle, '/api/tasks/<int:task_id>')
     api.add_resource(AssignTask, '/api/assign_task')
     api.add_resource(UserComments, '/api/reports/user_comments')
+    api.add_resource(TaskStats, '/api/reports/task_stats')
     return app
 
 auth = HTTPBasicAuth()

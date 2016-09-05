@@ -8,7 +8,6 @@ from xhtml2pdf import pisa
 def generate_json(data, **kwargs):
     temp = tempfile.NamedTemporaryFile()
     temp.write(json.dumps(data,
-                          sort_keys=True,
                           indent=kwargs.get('indent'),
                           separators=(',', ': ')))
     temp.seek(0)

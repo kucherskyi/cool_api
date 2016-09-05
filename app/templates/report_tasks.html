@@ -1,0 +1,17 @@
+<!doctype html>
+<title>Tasks report</title>
+<table style="border: 1px solid black">
+<thead >
+{% for field in items[0].keys()%}
+<th style="text-align: left; padding: 3px">{{field}}</th>
+{% endfor %}
+</thead>
+{% for i in items %}
+<tr>
+<td style="padding: 3px" >{{i['task_id']}}</td>
+<td style="padding: 3px" >{{i['task_title']}}</td>
+<td style="padding: 3px" >{{i['comments']}}</td>
+<td style="padding: 3px" >{{i['users_assigned']}}</td>
+</tr>
+{% endfor %}
+</table>

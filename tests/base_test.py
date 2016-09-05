@@ -20,7 +20,7 @@ class BaseTestCase(TestCase):
         current_app.config['SQLALCHEMY_DATABASE_URI'] = \
             'postgresql://admin:pass@localhost:5432/test'
         db.create_all()
-        user1 = User(name='user1', email='email1@em.co')
+        user1 = User(name='user1', email='email1@em.co', is_admin=True)
         user1.password = hashlib.md5('pass1').hexdigest()
         db.session.add(user1)
         db.session.commit()

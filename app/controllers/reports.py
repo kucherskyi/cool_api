@@ -1,3 +1,4 @@
+# -- coding: utf-8 --
 '''
 User stories:
 1. Project admins want to receive reports for future analysing.
@@ -14,9 +15,10 @@ next improvement will be moving reports generation to another server.
 Please think about solution and investigate libraries you will use.
 '''
 
+from collections import OrderedDict
 from flask import current_app, abort
 from flask_restful import reqparse
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 
 from app.controllers.controller import Base
@@ -25,6 +27,8 @@ from app.file_generator import *
 from app.email_sender import *
 from app.models.comment import Comment
 from app.models.user import User
+from app.models.task import Task, UserAndTaskRelation
+from app.models.base import db
 
 
 FORMAT_FUNC = {'json': generate_json,
@@ -63,7 +67,7 @@ class Reports(Base):
         return {'status': 'sent'}, 200
 
     def get_data():
-        pass
+        raise NotImplementedError
 
 
 class UserComments(Reports):
@@ -75,14 +79,28 @@ class UserComments(Reports):
     def get_data(self):
         query = User.query.add_columns(func.count())
         query = query.join(Comment).group_by(User.id)
-        count_list = []
-        for el in query.all():
-            count_list.append({'username': el[0].name, 'count': el[1]})
-        return count_list
+        report_data = []
+        for item in query:
+            report_data.append({'username': item[0].name, 'count': item[1]})
+        return report_data
 
 
-a = Reports()
+class TaskStats(Reports):
 
+    template = '/report_tasks.html'
+    delimiter = ','
+    indent = 4
 
-class B(Reports):
-    pass
+    def get_data(self):
+        users_count = select([func.count()]).where(
+                        UserAndTaskRelation.task_id == Task.id).label('users')
+        comments_count = select([func.count()]).where(
+                        Comment.task_id == Task.id).label('comments')
+        query = Task.query.add_columns(Task.title, users_count, comments_count)
+        report_data = []
+        for item in query:
+            tmp = {}
+            for k in item.keys():
+                tmp[k] = getattr(item, k)
+            report_data.append(tmp)
+        return report_data
