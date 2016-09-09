@@ -1,3 +1,4 @@
+from flask import current_app
 import hashlib
 import unittest
 import mock
@@ -22,51 +23,74 @@ class TestUsersReport(BaseTestCase):
         db.session.add(user2)
         db.session.commit()
         token = self.login('user2', '1').json['token']
-        res = self.client.get('api/tasks/1/comments',
-                               headers={'token': token})
+        res = self.client.get('api/tasks/1/comments', headers={'token': token})
+        self.assert403(res)
 
     def test_get_report_admin_wrong_format(self):
         token = self.login().json['token']
-        res = self.client.get(self.ENDPOINT+ '?format=not_valid',
+        res = self.client.get(self.ENDPOINT + '?format=not_valid',
                               headers={'token': token})
         self.assert400(res)
 
-    def test_get_report_no_format(self):
+    @mock.patch('app.controllers.reports.FORMAT_FUNC')
+    @mock.patch('app.email_sender.send_mail')
+    def test_get_report_no_format(self, mock_email, mock_format):
+        mock_json = mock_format.get('json', return_value=mock.MagicMock())
         token = self.login().json['token']
-        res = self.client.get(self.ENDPOINT,
-                              headers={'token': token})
-        self.assertEqual(res.status_code, 200)
+        res = self.client.get(self.ENDPOINT, headers={'token': token})
+        self.assert200(res)
+        mock_json.assert_called_once_with([], delimiter='|',
+                                          emplate='/report_comments.html',
+                                          indent=4)
+        mock_email.assert_called_once_with(current_app,
+                                           mock_json.return_value,
+                                           'application/json')
 
-
-    def test_get_report_json(self):
+    @mock.patch('app.controllers.reports.FORMAT_FUNC')
+    @mock.patch('app.email_sender.send_mail')
+    def test_get_report_json(self, mock_email, mock_format):
+        mock_json = mock_format.get('json', return_value=mock.MagicMock())
         token = self.login().json['token']
-        res = self.client.get(self.ENDPOINT+'?format=json',
+        res = self.client.get(self.ENDPOINT + '?format=json',
                               headers={'token': token})
-        self.assertEqual(res.status_code, 200)
+        self.assert200(res)
+        mock_json.assert_called_once_with([], delimiter='|',
+                                          emplate='/report_comments.html',
+                                          indent=4)
+        mock_email.assert_called_once_with(current_app,
+                                           mock_json.return_value,
+                                           'application/json')
 
-    def test_get_report_csv(self):
-        task1 = Task(title='title1', status='in_progress')
-        task1.assign_user(1)
-        comment1 = Comment(text='yey', user_id=1, task_id=1)
-        db.session.add(task1)
-        db.session.add(comment1)
-        db.session.commit()
+    @mock.patch('app.controllers.reports.FORMAT_FUNC')
+    @mock.patch('app.email_sender.send_mail')
+    def test_get_report_csv(self, mock_email, mock_format):
+        mock_json = mock_format.get('csv', return_value=mock.MagicMock())
         token = self.login().json['token']
         res = self.client.get(self.ENDPOINT + '?format=csv',
                               headers={'token': token})
-        self.assertEqual(res.status_code, 200)
+        self.assert200(res)
+        mock_json.assert_called_once_with([], delimiter='|',
+                                          emplate='/report_comments.html',
+                                          indent=4)
+        mock_email.assert_called_once_with(current_app,
+                                           mock_json.return_value,
+                                           'text/csv')
 
-    def test_get_report_pdf(self):
-        task1 = Task(title='title1', status='in_progress')
-        task1.assign_user(1)
-        comment1 = Comment(text='yey', user_id=1, task_id=1)
-        db.session.add(task1)
-        db.session.add(comment1)
-        db.session.commit()
+    @mock.patch('app.controllers.reports.FORMAT_FUNC')
+    @mock.patch('app.email_sender.send_mail')
+    def test_get_report_pdf(self, mock_email, mock_format):
+        mock_json = mock_format.get('csv', return_value=mock.MagicMock())
         token = self.login().json['token']
-        res = self.client.get(self.ENDPOINT+'?format=pdf',
+        res = self.client.get(self.ENDPOINT + '?format=pdf',
                               headers={'token': token})
-        self.assertEqual(res.status_code, 200)
+        self.assert200(res)
+        mock_json.assert_called_once_with([], delimiter='|',
+                                          emplate='/report_comments.html',
+                                          indent=4)
+        mock_email.assert_called_once_with(current_app,
+                                           mock_json.return_value,
+                                           'application/pdf')
+
 
 class TestTasksReport(BaseTestCase):
 
@@ -76,28 +100,78 @@ class TestTasksReport(BaseTestCase):
         self.assert401(self.client.get(self.ENDPOINT))
 
     def test_get_report_no_admin(self):
+        user2 = User(name='user2', email='email2@em.co')
+        user2.password = hashlib.md5('1').hexdigest()
+        db.session.add(user2)
+        db.session.commit()
+        token = self.login('user2', '1').json['token']
+        res = self.client.get('api/tasks/1/comments', headers={'token': token})
+        self.assert403(res)
+
+    def test_get_report_admin_wrong_format(self):
         token = self.login().json['token']
-        res = self.client.get(self.ENDPOINT+ '?format=not_valid',
+        res = self.client.get(self.ENDPOINT + '?format=not_valid',
                               headers={'token': token})
         self.assert400(res)
 
-    def test_get_report_wrong_format(self):
-        pass
+    @mock.patch('app.controllers.reports.FORMAT_FUNC')
+    @mock.patch('app.email_sender.send_mail')
+    def test_get_report_no_format(self, mock_email, mock_format):
+        mock_json = mock_format.get('json', return_value=mock.MagicMock())
+        token = self.login().json['token']
+        res = self.client.get(self.ENDPOINT, headers={'token': token})
+        self.assert200(res)
+        mock_json.assert_called_once_with([], delimiter=',',
+                                          emplate='/report_tasks.html',
+                                          indent=4)
+        mock_email.assert_called_once_with(current_app,
+                                           mock_json.return_value,
+                                           'application/json')
 
-    def test_get_report_no_format(self):
-        pass
+    @mock.patch('app.controllers.reports.FORMAT_FUNC')
+    @mock.patch('app.email_sender.send_mail')
+    def test_get_report_json(self, mock_email, mock_format):
+        mock_json = mock_format.get('json', return_value=mock.MagicMock())
+        token = self.login().json['token']
+        res = self.client.get(self.ENDPOINT + '?format=json',
+                              headers={'token': token})
+        self.assert200(res)
+        mock_json.assert_called_once_with([], delimiter=',',
+                                          emplate='/report_tasks.html',
+                                          indent=4)
+        mock_email.assert_called_once_with(current_app,
+                                           mock_json.return_value,
+                                           'application/json')
 
-    def test_get_report_json(self):
-        pass
+    @mock.patch('app.controllers.reports.FORMAT_FUNC')
+    @mock.patch('app.email_sender.send_mail')
+    def test_get_report_csv(self, mock_email, mock_format):
+        mock_json = mock_format.get('csv', return_value=mock.MagicMock())
+        token = self.login().json['token']
+        res = self.client.get(self.ENDPOINT + '?format=csv',
+                              headers={'token': token})
+        self.assert200(res)
+        mock_json.assert_called_once_with([], delimiter=',',
+                                          emplate='/report_tasks.html',
+                                          indent=4)
+        mock_email.assert_called_once_with(current_app,
+                                           mock_json.return_value,
+                                           'text/csv')
 
-    def test_get_report_if_data_valid(self):
-        pass
-
-    def test_get_report_csv(self):
-        pass
-
-    def test_get_report_pdf(self):
-        pass
+    @mock.patch('app.controllers.reports.FORMAT_FUNC')
+    @mock.patch('app.email_sender.send_mail')
+    def test_get_report_pdf(self, mock_email, mock_format):
+        mock_json = mock_format.get('csv', return_value=mock.MagicMock())
+        token = self.login().json['token']
+        res = self.client.get(self.ENDPOINT + '?format=pdf',
+                              headers={'token': token})
+        self.assert200(res)
+        mock_json.assert_called_once_with([], delimiter=',',
+                                          emplate='/report_tasks.html',
+                                          indent=4)
+        mock_email.assert_called_once_with(current_app,
+                                           mock_json.return_value,
+                                           'application/pdf')
 
 
 if __name__ == '__main__':

@@ -6,10 +6,9 @@ from xhtml2pdf import pisa
 
 
 def generate_json(data, **kwargs):
-    temp = tempfile.NamedTemporaryFile()
+    temp = tempfile.TemporaryFile()
     temp.write(json.dumps(data,
-                          indent=kwargs.get('indent'),
-                          separators=(',', ': ')))
+                          indent=kwargs.get('indent')))
     temp.seek(0)
     return temp
 

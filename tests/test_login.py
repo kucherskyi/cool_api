@@ -18,7 +18,7 @@ class TestLogin(BaseTestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_login_with_other_credentials(self):
-        user2 = User(name='user2', email = 'email2em.co')
+        user2 = User(name='user2', email='email2em.co')
         user2.password = hashlib.md5('pass2').hexdigest()
         db.session.add(user2)
         db.session.commit()
