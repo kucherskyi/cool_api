@@ -5,8 +5,6 @@ import mock
 
 from tests.base_test import BaseTestCase
 from app.models.user import User
-from app.models.task import Task
-from app.models.comment import Comment
 from app.models.base import db
 
 

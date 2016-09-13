@@ -15,6 +15,8 @@ def generate_json(data, **kwargs):
 
 def generate_csv(data, **kwargs):
     temp = tempfile.TemporaryFile()
+    if not data:
+        return temp
     headers = data[0].keys()
     writer = csv.DictWriter(temp, delimiter=kwargs.get('delimiter'),
                             quoting=csv.QUOTE_NONE,
