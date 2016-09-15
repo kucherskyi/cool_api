@@ -1,20 +1,3 @@
-# -- coding: utf-8 --
-'''
-User stories:
-1. Project admins want to receive reports for future analysing.
-2. There are 2 types of reports:
-    - users comments: user name and total number of comments.
-    - task average usage: should return all tasks with quantities of
-    assigned users and comments, and deltas(user count and comments count)
-    between average values (for all tasks) and values for current task
-    (in percents).
-3. User could select format for report. Supported formats cvs, json and pdf.
-4. Generated report should be sent to admin email.
-On phase one it is ok to generate report in web application but our
-next improvement will be moving reports generation to another server.
-Please think about solution and investigate libraries you will use.
-'''
-
 from flask import current_app, abort
 from flask_restful import reqparse
 from sqlalchemy import func, select
@@ -53,18 +36,19 @@ class Reports(Base):
 
     def get(self):
         args = parser.parse_args()
-        data = self.get_data()
-        tmpfile = FORMAT_FUNC.get(args['format'])(data,
+        tmpfile = FORMAT_FUNC.get(args['format'])(self.get_data(),
                                                   template=self.template,
                                                   delimiter=self.delimiter,
                                                   indent=self.indent)
+
         try:
             email_sender.send_mail(current_app, tmpfile,
                                    FORMATS.get(args['format']))
-        except Exception as e:
+        except AttributeError as e:
             abort(400, str(e))
-        tmpfile.close()
-        return {'status': 'sent'}, 200
+        finally:
+            tmpfile.close()
+        return {'status': 'sent'}
 
     def get_data():
         raise NotImplementedError
@@ -101,6 +85,9 @@ class TaskStats(Reports):
         for item in query:
             tmp = {}
             for k in item.keys():
-                tmp[k] = getattr(item, k)
+                try:
+                    tmp[k] = getattr(item, k).id
+                except AttributeError:
+                    tmp[k] = getattr(item, k)
             report_data.append(tmp)
         return report_data

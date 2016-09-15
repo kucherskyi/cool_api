@@ -38,7 +38,7 @@ class TestUsersReport(BaseTestCase):
         res = self.client.get(self.ENDPOINT, headers={'token': token})
         self.assert200(res)
         mock_json.assert_called_once_with([], delimiter='|',
-                                          emplate='/report_comments.html',
+                                          template='/report_comments.html',
                                           indent=4)
         mock_email.assert_called_once_with(current_app,
                                            mock_json.return_value,
@@ -53,7 +53,7 @@ class TestUsersReport(BaseTestCase):
                               headers={'token': token})
         self.assert200(res)
         mock_json.assert_called_once_with([], delimiter='|',
-                                          emplate='/report_comments.html',
+                                          template='/report_comments.html',
                                           indent=4)
         mock_email.assert_called_once_with(current_app,
                                            mock_json.return_value,
@@ -68,7 +68,7 @@ class TestUsersReport(BaseTestCase):
                               headers={'token': token})
         self.assert200(res)
         mock_json.assert_called_once_with([], delimiter='|',
-                                          emplate='/report_comments.html',
+                                          template='/report_comments.html',
                                           indent=4)
         mock_email.assert_called_once_with(current_app,
                                            mock_json.return_value,
@@ -83,7 +83,7 @@ class TestUsersReport(BaseTestCase):
                               headers={'token': token})
         self.assert200(res)
         mock_json.assert_called_once_with([], delimiter='|',
-                                          emplate='/report_comments.html',
+                                          template='/report_comments.html',
                                           indent=4)
         mock_email.assert_called_once_with(current_app,
                                            mock_json.return_value,
@@ -120,7 +120,7 @@ class TestTasksReport(BaseTestCase):
         res = self.client.get(self.ENDPOINT, headers={'token': token})
         self.assert200(res)
         mock_json.assert_called_once_with([], delimiter=',',
-                                          emplate='/report_tasks.html',
+                                          template='/report_tasks.html',
                                           indent=4)
         mock_email.assert_called_once_with(current_app,
                                            mock_json.return_value,
@@ -135,7 +135,7 @@ class TestTasksReport(BaseTestCase):
                               headers={'token': token})
         self.assert200(res)
         mock_json.assert_called_once_with([], delimiter=',',
-                                          emplate='/report_tasks.html',
+                                          template='/report_tasks.html',
                                           indent=4)
         mock_email.assert_called_once_with(current_app,
                                            mock_json.return_value,
@@ -150,7 +150,7 @@ class TestTasksReport(BaseTestCase):
                               headers={'token': token})
         self.assert200(res)
         mock_json.assert_called_once_with([], delimiter=',',
-                                          emplate='/report_tasks.html',
+                                          template='/report_tasks.html',
                                           indent=4)
         mock_email.assert_called_once_with(current_app,
                                            mock_json.return_value,
@@ -165,7 +165,7 @@ class TestTasksReport(BaseTestCase):
                               headers={'token': token})
         self.assert200(res)
         mock_json.assert_called_once_with([], delimiter=',',
-                                          emplate='/report_tasks.html',
+                                          template='/report_tasks.html',
                                           indent=4)
         mock_email.assert_called_once_with(current_app,
                                            mock_json.return_value,

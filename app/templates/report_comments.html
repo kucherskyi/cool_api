@@ -6,10 +6,11 @@
 <th style="text-align: left; padding: 3px">{{field}}</th>
 {% endfor %}
 </thead>
-{% for user in items %}
+{% for item in items %}
 <tr>
-<td style="padding: 3px" >{{user['username']}}</td>
-<td style="padding: 3px" >{{user['count']}}</td>
+{% for element in item.values() %}
+<td style="padding: 3px" >{{element}}</td>
+{% endfor %}
 </tr>
 {% endfor %}
 </table>

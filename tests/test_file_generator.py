@@ -22,7 +22,6 @@ class TestJsonGenerator(TestCase):
         self.assertEqual(temp.tell(), 0)
         self.assertEqual(temp.read(), 'test')
         temp.close()
-        self.assertTrue(temp.closed)
         jsn.assert_called_once_with(test_data, indent=4)
 
 

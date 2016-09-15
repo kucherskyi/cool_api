@@ -98,7 +98,7 @@ class TestUserList(BaseTestCase):
                                data=params)
         self.assert400(res)
         self.assertDictEqual(res.json['message'],
-            {'email': 'notvalid is not a valid email'})
+                             {'email': 'notvalid is not a valid email'})
 
     def test_post_integrity_error(self):
         params = self.REQUIRED_DATA.copy()
@@ -130,10 +130,10 @@ class TestUserSingle(BaseTestCase):
     def test_get(self):
         res = self.client.get(self.ENDPOINT + '/1', headers=self.auth_header)
         self.assert200(res)
-        self.assertEqual(res.json['name'],'user1')
-        self.assertEqual(res.json['email'],'email1@em.co')
+        self.assertEqual(res.json['name'], 'user1')
+        self.assertEqual(res.json['email'], 'email1@em.co')
         self.assertEqual(res.json['info'], None)
-        self.assertEqual(res.json['is_admin'], False)
+        self.assertEqual(res.json['is_admin'], True)
         self.assertIn('2016', res.json['created_at'])
         self.assertIn('2016', res.json['updated_at'])
 
