@@ -1,3 +1,5 @@
+
+from flask_mail import Attachment
 from flask import current_app, abort
 from flask_restful import reqparse
 from sqlalchemy import func, select
@@ -9,6 +11,7 @@ from app import file_generator
 from app import email_sender
 from app.models.comment import Comment
 from app.models.user import User
+from app.models.base import db
 from app.models.task import Task, UserAndTaskRelation
 
 
@@ -41,9 +44,14 @@ class Reports(Base):
                                                   delimiter=self.delimiter,
                                                   indent=self.indent)
 
+        attachment = Attachment(filename='Report.' + str(args['format']),
+                                content_type=FORMATS.get(args['format']),
+                                data=tmpfile.read())
         try:
-            email_sender.send_mail(current_app, tmpfile,
-                                   FORMATS.get(args['format']))
+            email_sender.send_mail('Report',
+                                   'body',
+                                   current_app.user.email,
+                                   attachment=attachment)
         except AttributeError as e:
             abort(400, str(e))
         finally:
@@ -80,14 +88,9 @@ class TaskStats(Reports):
             UserAndTaskRelation.task_id == Task.id).label('users')
         comments_count = select([func.count()]).where(
             Comment.task_id == Task.id).label('comments')
-        query = Task.query.add_columns(Task.title, users_count, comments_count)
+        query = db.session.query(Task.id, Task.title,
+                                 users_count, comments_count)
         report_data = []
         for item in query:
-            tmp = {}
-            for k in item.keys():
-                try:
-                    tmp[k] = getattr(item, k).id
-                except AttributeError:
-                    tmp[k] = getattr(item, k)
-            report_data.append(tmp)
+            report_data.append(item._asdict())
         return report_data
