@@ -30,7 +30,9 @@ def generate_csv(data, **kwargs):
 
 def generate_pdf(data, **kwargs):
     temp = tempfile.TemporaryFile()
-    template = render_template(kwargs.get('template'), items=data)
+    template = render_template(kwargs.get('template'),
+                               items=data,
+                               report_title=kwargs.get('title'))
     pisa.CreatePDF(template, dest=temp)
     temp.seek(0)
     return temp

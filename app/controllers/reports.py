@@ -43,7 +43,8 @@ class Reports(Base):
         tmpfile = FORMAT_FUNC.get(args['format'])(self.get_data(),
                                                   template=self.template,
                                                   delimiter=self.delimiter,
-                                                  indent=self.indent)
+                                                  indent=self.indent,
+                                                  title=self.title)
 
         file_name = '{}_{}.{}'.format(current_app.user.name,
                                       datetime.now().strftime('%Y%m%d%H%M%S'),
@@ -51,8 +52,8 @@ class Reports(Base):
         attachment = Attachment(filename=file_name,
                                 content_type=FORMATS.get(args['format']),
                                 data=tmpfile.read())
-        s3.send_to_s3('flask-reports', file_name, tmpfile)
-        link = s3.generate_link_to_attach('flask-reports', file_name)
+        s3.send_to_s3('reports-json', file_name, tmpfile)
+        link = s3.generate_link_to_attach('reports-json', file_name)
         email_sender.send_mail('Report',
                                render_template('report_email.html',
                                                user=current_app.user.name,
@@ -68,7 +69,8 @@ class Reports(Base):
 
 class UserComments(Reports):
 
-    template = '/report_comments.html'
+    title = 'User and Comments report'
+    template = '/report.html'
     delimiter = '|'
     indent = 4
 
@@ -83,7 +85,8 @@ class UserComments(Reports):
 
 class TaskStats(Reports):
 
-    template = '/report_tasks.html'
+    title = 'Task stats report'
+    template = '/report.html'
     delimiter = ','
     indent = 4
 
