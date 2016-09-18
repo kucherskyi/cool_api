@@ -1,6 +1,6 @@
-
+from datetime import datetime
 from flask_mail import Attachment
-from flask import current_app, abort
+from flask import current_app, abort, render_template
 from flask_restful import reqparse
 from sqlalchemy import func, select
 
@@ -9,6 +9,7 @@ from app.controllers.controller import Base
 from app.const import FORMATS
 from app import file_generator
 from app import email_sender
+from app import amazon_s3 as s3
 from app.models.comment import Comment
 from app.models.user import User
 from app.models.base import db
@@ -44,18 +45,21 @@ class Reports(Base):
                                                   delimiter=self.delimiter,
                                                   indent=self.indent)
 
-        attachment = Attachment(filename='Report.' + str(args['format']),
+        file_name = '{}_{}.{}'.format(current_app.user.name,
+                                      datetime.now().strftime('%Y%m%d%H%M%S'),
+                                      args['format'])
+        attachment = Attachment(filename=file_name,
                                 content_type=FORMATS.get(args['format']),
                                 data=tmpfile.read())
-        try:
-            email_sender.send_mail('Report',
-                                   'body',
-                                   current_app.user.email,
-                                   attachment=attachment)
-        except AttributeError as e:
-            abort(400, str(e))
-        finally:
-            tmpfile.close()
+        s3.send_to_s3('flask-reports', file_name, tmpfile)
+        link = s3.generate_link_to_attach('flask-reports', file_name)
+        email_sender.send_mail('Report',
+                               render_template('report_email.html',
+                                               user=current_app.user.name,
+                                               link=link),
+                               current_app.user.email,
+                               attachment=attachment)
+        tmpfile.close()
         return {'status': 'sent'}
 
     def get_data():
