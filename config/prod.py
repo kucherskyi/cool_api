@@ -2,5 +2,5 @@ DEBUG = True
 TESTING = False
 CSRF_ENABLED = True
 SECRET_KEY = 'sk'
-SQLALCHEMY_DATABASE_URI = 'postgresql://admin:pass@localhost:5432/prod'
+SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
 SQLALCHEMY_TRACK_MODIFICATIONS = False
