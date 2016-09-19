@@ -52,6 +52,7 @@ class Reports(Base):
         attachment = Attachment(filename=file_name,
                                 content_type=FORMATS.get(args['format']),
                                 data=tmpfile.read())
+        tmpfile.seek(0)
         s3.send_to_s3('reports-json', file_name, tmpfile)
         link = s3.generate_link_to_attach('reports-json', file_name)
         email_sender.send_mail('Report',

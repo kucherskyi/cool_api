@@ -34,6 +34,7 @@ def create_app():
     api.add_resource(TaskStats, '/api/reports/task_stats')
     return app
 
+
 auth = HTTPBasicAuth()
 
 

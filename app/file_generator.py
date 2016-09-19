@@ -6,6 +6,7 @@ from xhtml2pdf import pisa
 
 
 def generate_json(data, **kwargs):
+    import pdb; pdb.set_trace()
     temp = tempfile.TemporaryFile()
     temp.write(json.dumps(data,
                           indent=kwargs.get('indent')))

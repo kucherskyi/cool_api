@@ -16,5 +16,5 @@ def generate_link_to_attach(bucket, key):
         global s3
         s3 = boto3.client('s3')
     link = s3.generate_presigned_url(
-        'get_object', Params={'Bucket': bucket, 'Key': key})
+        'get_object', Params={'Bucket': bucket, 'Key': key}, ExpiresIn=86400)
     return link

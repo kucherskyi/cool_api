@@ -1,3 +1,4 @@
+import os
 DEBUG = True
 TESTING = False
 CSRF_ENABLED = True
