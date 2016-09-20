@@ -117,5 +117,6 @@ class TestComments(BaseTestCase):
         self.assertEqual(comment.user_id, 1)
         self.assertEqual(comment.task_id, 1)
 
+
 if __name__ == '__main__':
     unittest.main()
