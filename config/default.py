@@ -1,3 +1,4 @@
-DEBUG = True
-SQLALCHEMY_DATABASE_URI = 'postgresql://admin:pass@localhost:5432/test_migrations'
-SQLALCHEMY_TRACK_MODIFICATIONS = False
+TESTING = False
+CSRF_ENABLED = False
+DEBUG = False
+SECRET_KEY = None

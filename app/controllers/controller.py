@@ -43,4 +43,5 @@ def pagination(pagination_fields):
 
 
 class Base(BaseResource):
+
     method_decorators = [auth_token_required]

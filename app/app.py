@@ -11,7 +11,7 @@ def create_app():
     app = Flask(__name__)
     api = Api(app)
     app.config.from_object('config.default')
-    app.config.from_envvar('APP_SETTINGS', silent=True)
+    app.config.from_envvar('APP_SETTINGS', silent=False)
     app.add_url_rule('/api/login', 'login', _get_token)
     from models.base import db
     db.init_app(app)
@@ -19,6 +19,7 @@ def create_app():
     from controllers.user import UsersList, UserSingle
     from controllers.tasks import TaskSingle, Tasks, AssignTask
     from controllers.comments import Comments
+    from controllers.reports import UserComments, TaskStats
     app.before_request(db_connect.before_request)
     app.after_request(db_connect.after_request)
     app.add_url_rule('/api/tasks/<int:task_id>/comments',
@@ -29,7 +30,10 @@ def create_app():
     api.add_resource(Tasks, '/api/tasks')
     api.add_resource(TaskSingle, '/api/tasks/<int:task_id>')
     api.add_resource(AssignTask, '/api/assign_task')
+    api.add_resource(UserComments, '/api/reports/user_comments')
+    api.add_resource(TaskStats, '/api/reports/task_stats')
     return app
+
 
 auth = HTTPBasicAuth()
 
