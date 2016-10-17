@@ -1,21 +1,21 @@
-from flask import current_app
 import flask_mail
+from flask import current_app
 
 
 mail = None
 
 
-def send_mail(subject, html, recipients, attachment=None):
-    if not mail:
-        global mail
-        mail = flask_mail.Mail(current_app)
-    message = flask_mail.Message(subject,
-                                 recipients=[recipients],
-                                 html=html)
+def send_mail(subject, body, recipients, attachment=None):
 
-    if attachment:
-        message.attach(attachment.filename,
-                       attachment.content_type,
-                       attachment.data)
-
-    mail.send(message)
+    with current_app.app_context():
+        if not mail:
+            global mail
+            mail = flask_mail.Mail(current_app)
+            message = flask_mail.Message(subject=subject,
+                                         recipients=[recipients],
+                                         body=body)
+            if attachment:
+                message.attach(attachment.filename,
+                               attachment.content_type,
+                               attachment.data)
+            mail.send(message)
