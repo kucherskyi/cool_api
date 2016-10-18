@@ -1,17 +1,24 @@
 from flask import Flask, jsonify, g
 from flask_httpauth import HTTPBasicAuth
 from flask_restful import Api
+from celery import Celery
 
 from endpoints import COMMENTS
 from models.user import User
 import db_connect
 
+celerys = Celery(__name__,
+                 broker='amqp://test:test@134.249.116.18:5672/test',
+                 include=['tasks_celery'])
+
 
 def create_app():
     app = Flask(__name__)
     api = Api(app)
+    global celerys
     app.config.from_object('config.default')
     app.config.from_envvar('APP_SETTINGS', silent=False)
+    celerys.conf.update(app.config)
     app.add_url_rule('/api/login', 'login', _get_token)
     from models.base import db
     db.init_app(app)

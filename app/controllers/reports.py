@@ -2,9 +2,10 @@ from datetime import datetime
 from flask_mail import Attachment
 from flask import current_app, abort
 from flask_restful import reqparse
-from celery import Celery
 from sqlalchemy import func, select
+import os
 
+from tasks_celery import create_report
 from app.controllers.controller import Base
 from app.const import FORMATS
 from app import amazon_s3 as s3
@@ -19,8 +20,6 @@ parser = reqparse.RequestParser()
 parser.add_argument('format', choices=FORMATS.keys(),
                     location='args',
                     default='json')
-
-celery = Celery('app', broker='amqp://test:test@134.249.116.18:5672/test')
 
 FORMAT_FUNC = {'json': file_generator.generate_json,
                'csv': file_generator.generate_csv,
@@ -39,27 +38,8 @@ class Reports(Base):
 
     def get(self):
         arg = parser.parse_args()
-        celery.conf.update(current_app.config)
-        tmpfile = FORMAT_FUNC.get(arg.format)(self.get_data(),
-                                              template=self.template,
-                                              delimiter=self.delimiter,
-                                              indent=self.indent,
-                                              title=self.title)
-        file_name = '{}_{}.{}'.format(arg.format,
-                                      datetime.now().strftime('%Y%m%d%H%M%S'),
-                                      arg.format)
-        attachment = Attachment(filename=file_name,
-                                content_type=FORMATS.get(arg.format),
-                                data=tmpfile.read())
-        tmpfile.seek(0)
-        s3.send_to_s3('reports-json', file_name, tmpfile)
-        link = s3.generate_link_to_attach('reports-json', file_name)
-        tmpfile.close()
-        self._get_task.apply_async(args=[self,
-                                         'Report',
-                                         link,
-                                         current_app.user.email,
-                                         attachment])
+        create_report.apply_async(args=[current_app.user.email,
+                                        arg.format])
         return {'status': 'processing'}
 
     def _get_task(self):
@@ -67,6 +47,11 @@ class Reports(Base):
 
 
 class UserComments(Reports):
+
+    title = 'Task stats report'
+    template = '/report.html'
+    delimiter = ','
+    indent = 4
 
     def get_data(self):
         query = User.query.add_columns(func.count())
@@ -76,10 +61,10 @@ class UserComments(Reports):
             report_data.append({'username': item[0].name, 'count': item[1]})
         return report_data
 
-    @celery.task
-    def _get_task(self, subject, body, recipients, attachment):
-        email_sender.send_mail(subject, body, recipients,
-                               attachment=attachment)
+    def _get_task(self, subject, body, recipients):
+        script = 'python /home/artem/cool_api_git/cool_api/scripts.py \
+        send_email {} "{}" {}'.format(subject, str(body), recipients)
+        os.system(script)
 
 
 class TaskStats(Reports):
@@ -101,7 +86,6 @@ class TaskStats(Reports):
             report_data.append(item._asdict())
         return report_data
 
-    @celery.task
     def _get_task(self, subject, body, recipients, attachment):
         email_sender.send_mail(subject, body, recipients,
                                attachment=attachment)
