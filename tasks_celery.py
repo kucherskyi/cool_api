@@ -1,9 +1,16 @@
-from app.app import celerys
-
+from celery import Celery
+from flask import current_app
 from scripts import Commands
 
+from config import celery_config
 
-@celerys.task
-def create_report(email, report_type):
+
+celery = Celery()
+celery.config_from_object(celery_config)
+
+
+@celery.task
+def create_report(endpoint, email, report_type):
     command = Commands()
-    command.run(email, report_type)
+    with current_app.app_context():
+        command.run(endpoint, email, report_type)
